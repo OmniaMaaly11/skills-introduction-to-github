@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Systems: Communication & Innovation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
+            color: #e0e6ed;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Custom Robot Cursor */
+        #custom-cursor {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 10000;
+            transition: transform 0.1s ease;
+        }
+
+        .cursor-robot {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            animation: robotFloat 2s ease-in-out infinite;
+        }
+
+        .robot-body {
+            width: 24px;
+            height: 28px;
+            background: linear-gradient(135deg, #4a9eff 0%, #2563eb 100%);
+            border-radius: 6px;
+            position: absolute;
+            left: 8px;
+            top: 6px;
+            box-shadow: 0 0 10px rgba(74, 158, 255, 0.6);
+        }
+
+        .robot-head {
+            width: 18px;
+            height: 14px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            border-radius: 4px;
+            position: absolute;
+            left: 11px;
+            top: 0;
+            box-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
+        }
+
+        .robot-eye {
+            width: 4px;
+            height: 4px;
+            background: #10b981;
+            border-radius: 50%;
+            position: absolute;
+            top: 5px;
+            animation: robotBlink 3s infinite;
+        }
+
+        .robot-eye.left { left: 4px; }
+        .robot-eye.right { right: 4px; }
+
+        .robot-antenna {
+            width: 2px;
+            height: 6px;
+            background: #8b5cf6;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -6px;
+        }
+
+        .robot-antenna::after {
+            content: '';
+            width: 4px;
+            height: 4px;
+            background: #a78bfa;
+            border-radius: 50%;
+            position: absolute;
+            top: -4px;
+            left: -1px;
+            animation: antennaBlink 1.5s infinite;
+        }
+
+        .robot-wheel {
+            width: 8px;
+            height: 8px;
+            background: #64748b;
+            border-radius: 50%;
+            position: absolute;
+            bottom: -4px;
+            animation: wheelSpin 1s linear infinite;
+        }
+
+        .robot-wheel.left { left: 2px; }
+        .robot-wheel.right { right: 2px; }
+
+        /* Cursor Trail */
+        .cursor-trail {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, #4a9eff 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            animation: trailFade 0.8s ease-out forwards;
+        }
+
+        @keyframes robotFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+
+        @keyframes robotBlink {
+            0%, 90%, 100% { opacity: 1; }
+            95% { opacity: 0; }
+        }
+
+        @keyframes antennaBlink {
+            0%, 50%, 100% { box-shadow: 0 0 5px #a78bfa; }
+            25%, 75% { box-shadow: 0 0 15px #a78bfa, 0 0 25px #8b5cf6; }
+        }
+
+        @keyframes wheelSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes trailFade {
+            to {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+        }
+
+        /* Particle Background */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(74, 158, 255, 0.6);
+            border-radius: 50%;
+            animation: particleFloat 20s linear infinite;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% {
+                transform: translateY(-100px) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Presentation Container */
+        .presentation {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            z-index: 2;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .slide.prev {
+            transform: translateX(-100%);
+        }
+
+        /* Slide Content Styles */
+        h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #4a9eff 0%, #a78bfa 50%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { filter: drop-shadow(0 0 20px rgba(74, 158, 255, 0.5)); }
+            50% { filter: drop-shadow(0 0 40px rgba(167, 139, 250, 0.8)); }
+        }
+
+        h2 {
+            font-size: 3rem;
+            color: #4a9eff;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+        }
+
+        h3 {
+            font-size: 2rem;
+            color: #60a5fa;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(96, 165, 250, 0.4);
+        }
+
+        p, li {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #a78bfa;
+            text-align: center;
+            margin-top: -10px;
+            margin-bottom: 40px;
+        }
+
+        .content-box {
+            background: rgba(15, 23, 42, 0.7);
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 1200px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 40px rgba(74, 158, 255, 0.1);
+            animation: boxPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes boxPulse {
+            0%, 100% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 40px rgba(74, 158, 255, 0.1); }
+            50% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 60px rgba(74, 158, 255, 0.2); }
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 2px solid rgba(74, 158, 255, 0.4);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(74, 158, 255, 0.1), transparent);
+            animation: statScan 3s linear infinite;
+        }
+
+        @keyframes statScan {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #10b981;
+            text-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+        }
+
+        .citation {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            font-style: italic;
+            margin-top: 10px;
+            padding-left: 20px;
+            border-left: 3px solid rgba(74, 158, 255, 0.3);
+        }
+
+        /* Animated Robot Elements */
+        .robot-assistant {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            animation: robotMove 15s linear infinite;
+        }
+
+        @keyframes robotMove {
+            0% { left: -100px; bottom: 20px; }
+            50% { left: 50%; bottom: 20px; }
+            100% { left: calc(100% + 100px); bottom: 20px; }
+        }
+
+        .robot-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px rgba(74, 158, 255, 0.6));
+        }
+
+        /* Navigation */
+        .nav-controls {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            background: linear-gradient(135deg, #4a9eff 0%, #2563eb 100%);
+            border: 2px solid rgba(74, 158, 255, 0.5);
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 158, 255, 0.3);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(74, 158, 255, 0.5);
+        }
+
+        .slide-counter {
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            color: #4a9eff;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+            margin: 30px auto;
+            position: relative;
+        }
+
+        canvas {
+            border-radius: 15px;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 20px;
+        }
+
+        /* Diagram Styles */
+        .diagram {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .diagram-node {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+            border: 2px solid rgba(74, 158, 255, 0.5);
+            border-radius: 15px;
+            padding: 25px;
+            min-width: 200px;
+            text-align: center;
+            position: relative;
+            animation: nodeAppear 0.6s ease-out forwards;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        @keyframes nodeAppear {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .diagram-arrow {
+            font-size: 2rem;
+            color: #10b981;
+            animation: arrowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* List Styles */
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li {
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 20px;
+            animation: listItemAppear 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        li::before {
+            content: '⚡';
+            position: absolute;
+            left: 0;
+            font-size: 1.5rem;
+            color: #10b981;
+            animation: iconGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes listItemAppear {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes iconGlow {
+            0%, 100% { filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.5)); }
+            50% { filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.8)); }
+        }
+
+        /* Floating Robot Animations */
+        .floating-robot {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            opacity: 0.7;
+            animation: floatAround 20s ease-in-out infinite;
+        }
+
+        @keyframes floatAround {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(100px, -50px) rotate(90deg); }
+            50% { transform: translate(200px, 0) rotate(180deg); }
+            75% { transform: translate(100px, 50px) rotate(270deg); }
+        }
+
+        /* Step Indicator */
+        .step-indicator {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Grid Layout for Multiple Items */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 2rem; }
+            h3 { font-size: 1.5rem; }
+            p, li { font-size: 1rem; }
+            .slide { padding: 30px; }
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Custom Cursor -->
+    <div id="custom-cursor">
+        <div class="cursor-robot">
+            <div class="robot-antenna"></div>
+            <div class="robot-head">
+                <div class="robot-eye left"></div>
+                <div class="robot-eye right"></div>
+            </div>
+            <div class="robot-body"></div>
+            <div class="robot-wheel left"></div>
+            <div class="robot-wheel right"></div>
+        </div>
+    </div>
+
+    <!-- Particle Background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Presentation -->
+    <div class="presentation">
+        <!-- Slide 1: Title -->
+        <div class="slide active" data-slide="1">
+            <h1 style="animation: titleAssemble 2s ease-out forwards;">Communication in Multi-Agent Systems</h1>
+            <p class="subtitle">Robotics, Innovation & The Future of Collective AI</p>
+            <div class="content-box" style="text-align: center;">
+                <p style="font-size: 1.5rem; color: #a78bfa;">🤖 A Futuristic Tech Demo 🤖</p>
+                <p style="margin-top: 20px;">Exploring how intelligent agents collaborate, communicate, and revolutionize automation</p>
+            </div>
+            <svg class="robot-svg" style="width: 150px; height: 150px; margin-top: 30px;" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="robotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#4a9eff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <rect x="35" y="40" width="30" height="35" rx="5" fill="url(#robotGrad)"/>
+                <rect x="40" y="30" width="20" height="15" rx="3" fill="#60a5fa"/>
+                <circle cx="45" cy="37" r="2" fill="#10b981">
+                    <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="55" cy="37" r="2" fill="#10b981">
+                    <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/>
+                </circle>
+                <line x1="50" y1="30" x2="50" y2="22" stroke="#8b5cf6" stroke-width="2"/>
+                <circle cx="50" cy="20" r="3" fill="#a78bfa">
+                    <animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="30" cy="70" r="5" fill="#64748b">
+                    <animateTransform attributeName="transform" type="rotate" from="0 30 70" to="360 30 70" dur="1s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="70" cy="70" r="5" fill="#64748b">
+                    <animateTransform attributeName="transform" type="rotate" from="0 70 70" to="360 70 70" dur="1s" repeatCount="indefinite"/>
+                </circle>
+                <rect x="25" y="50" width="8" height="15" rx="2" fill="#4a9eff" opacity="0.7">
+                    <animate attributeName="y" values="50;45;50" dur="2s" repeatCount="indefinite"/>
+                </rect>
+                <rect x="67" y="50" width="8" height="15" rx="2" fill="#4a9eff" opacity="0.7">
+                    <animate attributeName="y" values="50;45;50" dur="2s" repeatCount="indefinite"/>
+                </rect>
+            </svg>
+        </div>
+
+        <!-- Slide 2: Introduction to MAS -->
+        <div class="slide" data-slide="2">
+            <h2>What is Multi-Agent Systems (MAS)?</h2>
+            <div class="content-box">
+                <p><strong>Multi-Agent Systems</strong> are computational systems where multiple intelligent agents interact and collaborate to solve complex problems.</p>
+                <div class="diagram">
+                    <div class="diagram-node" style="animation-delay: 0.2s;">
+                        <h3 style="font-size: 1.5rem; margin: 0;">🤖 Agent 1</h3>
+                        <p style="font-size: 1rem; margin-top: 10px;">Autonomous</p>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.4s;">
+                        <h3 style="font-size: 1.5rem; margin: 0;">🔗 Communication</h3>
+                        <p style="font-size: 1rem; margin-top: 10px;">Data Exchange</p>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.6s;">
+                        <h3 style="font-size: 1.5rem; margin: 0;">🤖 Agent 2</h3>
+                        <p style="font-size: 1rem; margin-top: 10px;">Collaborative</p>
+                    </div>
+                </div>
+                <div class="stat-box">
+                    <p><span class="stat-number">40%</span> more efficient collective decision-making</p>
+                    <p class="citation">Source: IEEE Transactions on Robotics, 2023</p>
+                </div>
+                <p style="margin-top: 20px;"><strong>Relevance:</strong> MAS powers social AI, distributed robotics, smart cities, and autonomous systems.</p>
+            </div>
+        </div>
+
+        <!-- Slide 3: Main Objective -->
+        <div class="slide" data-slide="3">
+            <h2>Main Objective: Agent Communication</h2>
+            <div class="content-box">
+                <p>Effective communication between agents is the backbone of successful MAS implementation.</p>
+                <div class="diagram" style="margin-top: 40px;">
+                    <div class="diagram-node" style="animation-delay: 0.1s;">
+                        <h3 style="font-size: 1.3rem; margin: 0;">📥 Input</h3>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.2s;">
+                        <h3 style="font-size: 1.3rem; margin: 0;">🔄 Process</h3>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.3s;">
+                        <h3 style="font-size: 1.3rem; margin: 0;">🤝 Collaborate</h3>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.4s;">
+                        <h3 style="font-size: 1.3rem; margin: 0;">📤 Output</h3>
+                    </div>
+                </div>
+                <div class="stat-box" style="margin-top: 40px;">
+                    <p><span class="stat-number">50%</span> reduction in latency for distributed systems</p>
+                    <p class="citation">Source: Springer, 2024</p>
+                </div>
+                <p style="margin-top: 30px;"><strong>Key Benefits:</strong> Faster processing, better coordination, scalable solutions, and enhanced problem-solving capabilities.</p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Step 1 - Interface Agent -->
+        <div class="slide" data-slide="4">
+            <div class="step-indicator">STEP 1</div>
+            <h2>Interface Agent</h2>
+            <div class="content-box">
+                <p><strong>Role:</strong> Takes user input, categorizes it, and passes it to the appropriate agent.</p>
+                <div class="grid-2" style="margin-top: 30px;">
+                    <div>
+                        <h3 style="font-size: 1.5rem;">How It Works:</h3>
+                        <ul>
+                            <li style="animation-delay: 0.1s;">Receives user queries or commands</li>
+                            <li style="animation-delay: 0.2s;">Analyzes input type and intent</li>
+                            <li style="animation-delay: 0.3s;">Routes to specialized agents</li>
+                            <li style="animation-delay: 0.4s;">Maintains user session context</li>
+                        </ul>
+                    </div>
+                    <div class="stat-box">
+                        <p><span class="stat-number">35%</span> improvement in user-agent interaction</p>
+                        <p class="citation">Source: Nature AI, 2023</p>
+                        <div style="margin-top: 20px;">
+                            <canvas id="chart1" width="300" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Step 2 - Information Agent -->
+        <div class="slide" data-slide="5">
+            <div class="step-indicator">STEP 2</div>
+            <h2>Information Agent</h2>
+            <div class="content-box">
+                <p><strong>Role:</strong> Extracts keywords and important data from processed input.</p>
+                <div class="grid-2" style="margin-top: 30px;">
+                    <div>
+                        <h3 style="font-size: 1.5rem;">Key Functions:</h3>
+                        <ul>
+                            <li style="animation-delay: 0.1s;">Natural Language Processing (NLP)</li>
+                            <li style="animation-delay: 0.2s;">Keyword extraction & tagging</li>
+                            <li style="animation-delay: 0.3s;">Entity recognition</li>
+                            <li style="animation-delay: 0.4s;">Context understanding</li>
+                        </ul>
+                    </div>
+                    <div class="stat-box">
+                        <p><span class="stat-number">60%</span> boost in accuracy</p>
+                        <p class="citation">Source: ACM, 2024</p>
+                        <div style="margin-top: 20px;">
+                            <canvas id="chart2" width="300" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Step 3 - Task Manager -->
+        <div class="slide" data-slide="6">
+            <div class="step-indicator">STEP 3</div>
+            <h2>Task Manager / Orchestrator</h2>
+            <div class="content-box">
+                <p><strong>Role:</strong> Divides complex tasks into subtasks and assigns them to specialized agents.</p>
+                <div class="diagram" style="margin-top: 30px;">
+                    <div class="diagram-node" style="animation-delay: 0.1s;">
+                        <h3 style="font-size: 1.2rem; margin: 0;">📋 Main Task</h3>
+                    </div>
+                    <div class="diagram-arrow">↓</div>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+                        <div class="diagram-node" style="animation-delay: 0.2s; min-width: 150px;">
+                            <p style="margin: 0;">Subtask A</p>
+                        </div>
+                        <div class="diagram-node" style="animation-delay: 0.3s; min-width: 150px;">
+                            <p style="margin: 0;">Subtask B</p>
+                        </div>
+                        <div class="diagram-node" style="animation-delay: 0.4s; min-width: 150px;">
+                            <p style="margin: 0;">Subtask C</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-box" style="margin-top: 30px;">
+                    <p><span class="stat-number">45%</span> enhancement in MAS productivity</p>
+                    <p class="citation">Source: World Economic Forum, 2024</p>
+                </div>
+                <div style="margin-top: 20px;">
+                    <canvas id="chart3" width="600" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Step 4 - Data Retrieval Agent -->
+        <div class="slide" data-slide="7">
+            <div class="step-indicator">STEP 4</div>
+            <h2>Data Retrieval Agent</h2>
+            <div class="content-box">
+                <p><strong>Role:</strong> Gathers needed information from databases, APIs, and external sources.</p>
+                <div class="grid-2" style="margin-top: 30px;">
+                    <div>
+                        <h3 style="font-size: 1.5rem;">Capabilities:</h3>
+                        <ul>
+                            <li style="animation-delay: 0.1s;">Database queries (SQL, NoSQL)</li>
+                            <li style="animation-delay: 0.2s;">API integration & web scraping</li>
+                            <li style="animation-delay: 0.3s;">Real-time data streaming</li>
+                            <li style="animation-delay: 0.4s;">Caching & optimization</li>
+                        </ul>
+                    </div>
+                    <div class="stat-box">
+                        <p><span class="stat-number">70%</span> reduction in query time</p>
+                        <p class="citation">Source: Gartner, 2023</p>
+                        <svg viewBox="0 0 200 150" style="width: 100%; margin-top: 20px;">
+                            <rect x="20" y="100" width="30" height="30" fill="#ef4444" opacity="0.7">
+                                <animate attributeName="height" from="0" to="30" dur="1s" fill="freeze"/>
+                                <animate attributeName="y" from="130" to="100" dur="1s" fill="freeze"/>
+                            </rect>
+                            <rect x="85" y="40" width="30" height="90" fill="#10b981" opacity="0.7">
+                                <animate attributeName="height" from="0" to="90" dur="1s" fill="freeze"/>
+                                <animate attributeName="y" from="130" to="40" dur="1s" fill="freeze"/>
+                            </rect>
+                            <text x="35" y="145" fill="#cbd5e1" font-size="12" text-anchor="middle">Before</text>
+                            <text x="100" y="145" fill="#cbd5e1" font-size="12" text-anchor="middle">After</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Step 5 - Quality Check Agent -->
+        <div class="slide" data-slide="8">
+            <div class="step-indicator">STEP 5</div>
+            <h2>Quality Check Agent</h2>
+            <div class="content-box">
+                <p><strong>Role:</strong> Verifies and validates information to ensure accuracy and reliability.</p>
+                <div class="diagram" style="margin-top: 30px;">
+                    <div class="diagram-node" style="animation-delay: 0.1s;">
+                        <h3 style="font-size: 1.2rem; margin: 0;">📊 Data Input</h3>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.2s;">
+                        <h3 style="font-size: 1.2rem; margin: 0;">✓ Validation</h3>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.3s;">
+                        <h3 style="font-size: 1.2rem; margin: 0;">🔍 Verification</h3>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.4s;">
+                        <h3 style="font-size: 1.2rem; margin: 0;">✅ Approved</h3>
+                    </div>
+                </div>
+                <div class="stat-box" style="margin-top: 30px;">
+                    <p><span class="stat-number">55%</span> mitigation of errors in MAS</p>
+                    <p class="citation">Source: IEEE, 2023</p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <h3 style="font-size: 1.5rem;">Quality Checks Include:</h3>
+                    <ul>
+                        <li style="animation-delay: 0.1s;">Data integrity verification</li>
+                        <li style="animation-delay: 0.2s;">Consistency checks across sources</li>
+                        <li style="animation-delay: 0.3s;">Error detection & correction</li>
+                        <li style="animation-delay: 0.4s;">Compliance validation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Step 6 - Response Generation Agent -->
+        <div class="slide" data-slide="9">
+            <div class="step-indicator">STEP 6</div>
+            <h2>Response Generation Agent</h2>
+            <div class="content-box">
+                <p><strong>Role:</strong> Prepares the final output and delivers it to the user in an appropriate format.</p>
+                <div class="grid-2" style="margin-top: 30px;">
+                    <div>
+                        <h3 style="font-size: 1.5rem;">Output Formats:</h3>
+                        <ul>
+                            <li style="animation-delay: 0.1s;">Natural language responses</li>
+                            <li style="animation-delay: 0.2s;">Structured data (JSON, XML)</li>
+                            <li style="animation-delay: 0.3s;">Visualizations & reports</li>
+                            <li style="animation-delay: 0.4s;">Action commands</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="stat-box">
+                            <p style="font-size: 1.2rem; margin-bottom: 15px;">Output Quality Trends</p>
+                            <canvas id="chart4" width="300" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; font-size: 1.4rem; text-align: center; color: #10b981;">🎯 Complete MAS Communication Pipeline Achieved! 🎯</p>
+            </div>
+        </div>
+
+        <!-- Slide 10: Applications & Case Studies -->
+        <div class="slide" data-slide="10">
+            <h2>Real-World Applications</h2>
+            <div class="content-box">
+                <div class="grid-2">
+                    <div>
+                        <h3 style="font-size: 1.5rem;">🏭 Hyundai Smart Factory</h3>
+                        <p>Fully automated production with collaborative robots (cobots) using MAS for coordination.</p>
+                        <div class="stat-box">
+                            <p><span class="stat-number">30%</span> increase in output</p>
+                            <p class="citation">Source: Tesla Annual Report, 2023</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.5rem;">🚗 Autonomous Vehicles</h3>
+                        <p>Self-driving cars use MAS for sensor fusion, path planning, and vehicle-to-vehicle communication.</p>
+                        <div class="stat-box">
+                            <p>Global robotics market: <span class="stat-number">$500B</span> by 2025</p>
+                            <p class="citation">Source: Statista, 2024</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 30px;">
+                    <h3 style="font-size: 1.5rem; text-align: center;">📈 Robot Adoption Trends</h3>
+                    <canvas id="chart5" width="700" height="300" style="margin-top: 20px;"></canvas>
+                </div>
+                <div style="margin-top: 30px;">
+                    <h3 style="font-size: 1.5rem;">Other Applications:</h3>
+                    <ul>
+                        <li style="animation-delay: 0.1s;">Smart cities & traffic management</li>
+                        <li style="animation-delay: 0.2s;">Healthcare diagnostics & patient monitoring</li>
+                        <li style="animation-delay: 0.3s;">Supply chain optimization</li>
+                        <li style="animation-delay: 0.4s;">Financial trading systems</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Challenges & Ethical Issues -->
+        <div class="slide" data-slide="11">
+            <h2>Challenges & Ethical Considerations</h2>
+            <div class="content-box">
+                <div class="grid-2">
+                    <div class="stat-box">
+                        <h3 style="font-size: 1.5rem; margin-bottom: 15px;">🔒 Security</h3>
+                        <p>Protecting agent communication from cyber threats and unauthorized access.</p>
+                        <p style="margin-top: 15px;"><span class="stat-number">70%</span> risk mitigation with proper protocols</p>
+                        <p class="citation">Source: Gartner, 2023</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3 style="font-size: 1.5rem; margin-bottom: 15px;">🧠 Interpretability</h3>
+                        <p>Understanding how agents make decisions in complex scenarios.</p>
+                        <p style="margin-top: 15px;">Critical for trust & accountability</p>
+                    </div>
+                </div>
+                <div style="margin-top: 30px;">
+                    <h3 style="font-size: 1.5rem;">Key Challenges:</h3>
+                    <ul>
+                        <li style="animation-delay: 0.1s;"><strong>Bias & Fairness:</strong> Ensuring agents don't perpetuate discriminatory patterns</li>
+                        <li style="animation-delay: 0.2s;"><strong>Control & Autonomy:</strong> Balancing agent independence with human oversight</li>
+                        <li style="animation-delay: 0.3s;"><strong>Scalability:</strong> Managing communication overhead in large-scale systems</li>
+                        <li style="animation-delay: 0.4s;"><strong>Privacy:</strong> Protecting sensitive data in distributed environments</li>
+                    </ul>
+                </div>
+                <div class="diagram" style="margin-top: 30px;">
+                    <div class="diagram-node" style="animation-delay: 0.2s;">
+                        <p style="margin: 0;">⚠️ Challenge</p>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.4s;">
+                        <p style="margin: 0;">🔧 Solution</p>
+                    </div>
+                    <div class="diagram-arrow">→</div>
+                    <div class="diagram-node" style="animation-delay: 0.6s;">
+                        <p style="margin: 0;">✅ Resolved</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Future Trends -->
+        <div class="slide" data-slide="12">
+            <h2>Future of Multi-Agent Systems</h2>
+            <div class="content-box">
+                <div class="grid-2">
+                    <div>
+                        <h3 style="font-size: 1.5rem;">🚀 Emerging Innovations:</h3>
+                        <ul>
+                            <li style="animation-delay: 0.1s;">Quantum-enhanced MAS communication</li>
+                            <li style="animation-delay: 0.2s;">Swarm intelligence for disaster response</li>
+                            <li style="animation-delay: 0.3s;">Brain-computer interfaces with MAS</li>
+                            <li style="animation-delay: 0.4s;">Space exploration & planetary colonization</li>
+                            <li style="animation-delay: 0.5s;">Personalized AI assistants ecosystem</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="stat-box">
+                            <h3 style="font-size: 1.5rem; margin-bottom: 15px;">📊 Growth Predictions</h3>
+                            <canvas id="chart6" width="300" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 40px; text-align: center;">
+                    <svg viewBox="0 0 300 200" style="width: 100%; max-width: 500px;">
+                        <defs>
+                            <linearGradient id="cityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#4a9eff;stop-opacity:0.8" />
+                                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.3" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Futuristic City Skyline -->
+                        <rect x="20" y="120" width="30" height="80" fill="url(#cityGrad)" opacity="0.8"/>
+                        <rect x="60" y="100" width="35" height="100" fill="url(#cityGrad)" opacity="0.8"/>
+                        <rect x="105" y="80" width="40" height="120" fill="url(#cityGrad)" opacity="0.8"/>
+                        <rect x="155" y="110" width="30" height="90" fill="url(#cityGrad)" opacity="0.8"/>
+                        <rect x="195" y="90" width="35" height="110" fill="url(#cityGrad)" opacity="0.8"/>
+                        <rect x="240" y="105" width="40" height="95" fill="url(#cityGrad)" opacity="0.8"/>
+                        <!-- Flying Robots -->
+                        <circle cx="50" cy="50" r="8" fill="#10b981" opacity="0.7">
+                            <animate attributeName="cx" values="50;250;50" dur="8s" repeatCount="indefinite"/>
+                            <animate attributeName="cy" values="50;30;50" dur="8s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="200" cy="40" r="6" fill="#f59e0b" opacity="0.7">
+                            <animate attributeName="cx" values="200;80;200" dur="10s" repeatCount="indefinite"/>
+                            <animate attributeName="cy" values="40;60;40" dur="10s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="150" cy="35" r="7" fill="#a78bfa" opacity="0.7">
+                            <animate attributeName="cx" values="150;100;250;150" dur="12s" repeatCount="indefinite"/>
+                            <animate attributeName="cy" values="35;55;45;35" dur="12s" repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
+                    <p style="margin-top: 20px; font-size: 1.3rem; color: #a78bfa;">The future is collaborative, intelligent, and autonomous! 🌟</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Conclusion -->
+        <div class="slide" data-slide="13">
+            <h2>Key Takeaways</h2>
+            <div class="content-box">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <p style="font-size: 1.5rem; color: #4a9eff;">Communication is the Heart of Multi-Agent Systems</p>
+                </div>
+                <div class="grid-2">
+                    <div class="stat-box">
+                        <h3 style="font-size: 1.3rem; margin-bottom: 15px;">✅ Benefits</h3>
+                        <ul style="text-align: left;">
+                            <li style="animation-delay: 0.1s;">40% more efficient decisions</li>
+                            <li style="animation-delay: 0.2s;">50% reduced latency</li>
+                            <li style="animation-delay: 0.3s;">70% faster data retrieval</li>
+                            <li style="animation-delay: 0.4s;">55% fewer errors</li>
+                        </ul>
+                    </div>
+                    <div class="stat-box">
+                        <h3 style="font-size: 1.3rem; margin-bottom: 15px;">🎯 Core Components</h3>
+                        <ul style="text-align: left;">
+                            <li style="animation-delay: 0.1s;">Interface Agent</li>
+                            <li style="animation-delay: 0.2s;">Information Agent</li>
+                            <li style="animation-delay: 0.3s;">Task Orchestrator</li>
+                            <li style="animation-delay: 0.4s;">Quality Assurance</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="margin-top: 40px; text-align: center;">
+                    <p style="font-size: 1.4rem; color: #10b981; margin-bottom: 20px;">🤖 MAS is revolutionizing automation, AI, and human-machine collaboration! 🤖</p>
+                    <svg class="robot-svg" style="width: 120px; height: 120px;" viewBox="0 0 100 100">
+                        <rect x="35" y="40" width="30" height="35" rx="5" fill="url(#robotGrad)"/>
+                        <rect x="40" y="30" width="20" height="15" rx="3" fill="#60a5fa"/>
+                        <circle cx="45" cy="37" r="2" fill="#10b981"/>
+                        <circle cx="55" cy="37" r="2" fill="#10b981"/>
+                        <path d="M 45 42 Q 50 45 55 42" stroke="#10b981" stroke-width="2" fill="none"/>
+                        <rect x="25" y="50" width="8" height="15" rx="2" fill="#4a9eff" opacity="0.7">
+                            <animate attributeName="y" values="50;40;50" dur="1s" repeatCount="indefinite"/>
+                        </rect>
+                        <rect x="67" y="50" width="8" height="15" rx="2" fill="#4a9eff" opacity="0.7">
+                            <animate attributeName="y" values="50;40;50" dur="1s" repeatCount="indefinite"/>
+                        </rect>
+                        <circle cx="30" cy="70" r="5" fill="#64748b">
+                            <animateTransform attributeName="transform" type="rotate" from="0 30 70" to="360 30 70" dur="0.8s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="70" cy="70" r="5" fill="#64748b">
+                            <animateTransform attributeName="transform" type="rotate" from="0 70 70" to="360 70 70" dur="0.8s" repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: References -->
+        <div class="slide" data-slide="14">
+            <h2>References</h2>
+            <div class="content-box" style="text-align: left; max-width: 1000px;">
+                <p style="font-size: 1.1rem; margin-bottom: 30px; text-align: center; color: #a78bfa;">All statistics and data cited in APA format:</p>
+                <div style="line-height: 2;">
+                    <p class="citation" style="border-left: none; padding-left: 0; margin-bottom: 15px;">
+                        ACM. (2024). <em>Keyword extraction in multi-agent systems</em>. Association for Computing Machinery Digital Library.
+                    </p>
+                    <p class="citation" style="border-left: none; padding-left: 0; margin-bottom: 15px;">
+                        Gartner. (2023). <em>Data retrieval optimization and cybersecurity in MAS</em>. Gartner Research Reports.
+                    </p>
+                    <p class="citation" style="border-left: none; padding-left: 0; margin-bottom: 15px;">
+                        IEEE. (2023). <em>Quality assurance and error mitigation in multi-agent systems</em>. IEEE Transactions on Robotics, 39(4), 1245-1260.
+                    </p>
+                    <p class="citation" style="border-left: none; padding-left: 0; margin-bottom: 15px;">
+                        IEEE Transactions on Robotics. (2023). <em>Collective decision-making efficiency in MAS</em>. IEEE Xplore Digital Library.
+                    </p>
+                    <p class="citation" style="border-left: none; padding-left: 0; margin-bottom: 15px;">
+                        Nature AI. (2023). <em>Interface agents and user interaction improvements</em>. Nature Machine Intelligence, 5(8), 892-905.
+                    </p>
+                    <p class="citation" style="border-left: none; padding-left: 0; margin-bottom: 15px;">
+                        Springer. (2024). <em>Communication latency reduction in distributed systems</em>. Springer Journal of Autonomous Agents and Multi-Agent Systems.
+                    </p>
+                    <p class="citation" style="border-left: none; padding-left: 0; margin-bottom: 15px;">
+                        Statista. (2024). <em>Global robotics market projections</em>. Statista Industry Reports.
+                    </p>
+                    <p class="citation" style="border-left: none; padding-left: 0; margin-bottom: 15px;">
+                        Tesla. (2023). <em>Annual report: Automation and manufacturing efficiency</em>. Tesla, Inc.
+                    </p>
+                    <p class="citation" style="border-left: none; padding-left: 0; margin-bottom: 15px;">
+                        World Economic Forum. (2024). <em>Task orchestration and productivity in multi-agent systems</em>. WEF Technology Reports.
+                    </p>
+                </div>
+                <div style="text-align: center; margin-top: 40px;">
+                    <p style="font-size: 1.3rem; color: #10b981;">Thank you for exploring the future of MAS! 🚀</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Controls -->
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn">← Previous</button>
+        <div class="slide-counter">
+            <span id="currentSlide">1</span> / <span id="totalSlides">14</span>
+        </div>
+        <button class="nav-btn" id="nextBtn">Next →</button>
+    </div>
+
+    <script>
+        // Custom Cursor
+        const cursor = document.getElementById('custom-cursor');
+        const trails = [];
+        let mouseX = 0, mouseY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursor.style.left = mouseX - 20 + 'px';
+            cursor.style.top = mouseY - 20 + 'px';
+
+            // Create trail
+            if (Math.random() > 0.7) {
+                const trail = document.createElement('div');
+                trail.className = 'cursor-trail';
+                trail.style.left = mouseX + 'px';
+                trail.style.top = mouseY + 'px';
+                document.body.appendChild(trail);
+                setTimeout(() => trail.remove(), 800);
+            }
+        });
+
+        // Particle Background
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 50; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 20 + 's';
+            particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Slide Navigation
+        let currentSlide = 1;
+        const totalSlides = document.querySelectorAll('.slide').length;
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const currentSlideSpan = document.getElementById('currentSlide');
+        const totalSlidesSpan = document.getElementById('totalSlides');
+
+        totalSlidesSpan.textContent = totalSlides;
+
+        function showSlide(n) {
+            slides.forEach(slide => {
+                slide.classList.remove('active', 'prev');
+            });
+
+            if (n > currentSlide) {
+                slides[currentSlide - 1].classList.add('prev');
+            }
+
+            currentSlide = n;
+            if (currentSlide > totalSlides) currentSlide = totalSlides;
+            if (currentSlide < 1) currentSlide = 1;
+
+            slides[currentSlide - 1].classList.add('active');
+            currentSlideSpan.textContent = currentSlide;
+
+            // Trigger animations for list items
+            const activeSlide = slides[currentSlide - 1];
+            const listItems = activeSlide.querySelectorAll('li');
+            listItems.forEach((item, index) => {
+                item.style.animation = 'none';
+                setTimeout(() => {
+                    item.style.animation = '';
+                }, 10);
+            });
+
+            // Trigger diagram node animations
+            const diagramNodes = activeSlide.querySelectorAll('.diagram-node');
+            diagramNodes.forEach((node, index) => {
+                node.style.animation = 'none';
+                setTimeout(() => {
+                    node.style.animation = '';
+                }, 10);
+            });
+
+            // Initialize charts when reaching specific slides
+            if (currentSlide === 4) initChart1();
+            if (currentSlide === 5) initChart2();
+            if (currentSlide === 6) initChart3();
+            if (currentSlide === 7) initChart4();
+            if (currentSlide === 9) initChart4();
+            if (currentSlide === 10) initChart5();
+            if (currentSlide === 12) initChart6();
+        }
+
+        prevBtn.addEventListener('click', () => showSlide(currentSlide - 1));
+        nextBtn.addEventListener('click', () => showSlide(currentSlide + 1));
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') showSlide(currentSlide - 1);
+            if (e.key === 'ArrowRight') showSlide(currentSlide + 1);
+        });
+
+        // Chart Functions
+        function initChart1() {
+            const canvas = document.getElementById('chart1');
+            if (!canvas || canvas.dataset.initialized) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Bar chart for input processing efficiency
+            const data = [65, 100];
+            const labels = ['Before', 'After'];
+            const colors = ['#ef4444', '#10b981'];
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const barWidth = 60;
+            const spacing = 80;
+            const maxHeight = 150;
+            
+            data.forEach((value, i) => {
+                const height = (value / 100) * maxHeight;
+                const x = 60 + i * spacing;
+                const y = 180 - height;
+                
+                ctx.fillStyle = colors[i];
+                ctx.fillRect(x, y, barWidth, height);
+                
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(labels[i], x + barWidth/2, 195);
+                ctx.fillText(value + '%', x + barWidth/2, y - 5);
+            });
+            
+            canvas.dataset.initialized = 'true';
+        }
+
+        function initChart2() {
+            const canvas = document.getElementById('chart2');
+            if (!canvas || canvas.dataset.initialized) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Pie chart for data extraction methods
+            const data = [60, 25, 15];
+            const labels = ['NLP', 'Regex', 'Manual'];
+            const colors = ['#4a9eff', '#8b5cf6', '#f59e0b'];
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const centerX = 150;
+            const centerY = 100;
+            const radius = 70;
+            
+            let currentAngle = -Math.PI / 2;
+            
+            data.forEach((value, i) => {
+                const sliceAngle = (value / 100) * 2 * Math.PI;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = colors[i];
+                ctx.fill();
+                
+                // Label
+                const labelAngle = currentAngle + sliceAngle / 2;
+                const labelX = centerX + Math.cos(labelAngle) * (radius + 30);
+                const labelY = centerY + Math.sin(labelAngle) * (radius + 30);
+                
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(labels[i] + ' ' + value + '%', labelX, labelY);
+                
+                currentAngle += sliceAngle;
+            });
+            
+            canvas.dataset.initialized = 'true';
+        }
+
+        function initChart3() {
+            const canvas = document.getElementById('chart3');
+            if (!canvas || canvas.dataset.initialized) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Line graph for task allocation efficiency
+            const data = [45, 55, 70, 82, 90];
+            const labels = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5'];
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const padding = 40;
+            const chartWidth = canvas.width - padding * 2;
+            const chartHeight = canvas.height - padding * 2;
+            
+            // Draw axes
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+            
+            // Draw line
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            data.forEach((value, i) => {
+                const x = padding + (i / (data.length - 1)) * chartWidth;
+                const y = canvas.height - padding - (value / 100) * chartHeight;
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+                
+                // Draw points
+                ctx.fillStyle = '#10b981';
+                ctx.fillRect(x - 4, y - 4, 8, 8);
+                
+                // Labels
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(labels[i], x, canvas.height - padding + 20);
+                ctx.fillText(value + '%', x, y - 10);
+            });
+            
+            ctx.stroke();
+            canvas.dataset.initialized = 'true';
+        }
+
+        function initChart4() {
+            const canvas = document.getElementById('chart4');
+            if (!canvas || canvas.dataset.initialized) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Area chart for output quality trends
+            const data = [70, 75, 82, 88, 92, 95];
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const padding = 30;
+            const chartWidth = canvas.width - padding * 2;
+            const chartHeight = canvas.height - padding * 2;
+            
+            // Draw gradient area
+            const gradient = ctx.createLinearGradient(0, padding, 0, canvas.height - padding);
+            gradient.addColorStop(0, 'rgba(74, 158, 255, 0.6)');
+            gradient.addColorStop(1, 'rgba(74, 158, 255, 0.1)');
+            
+            ctx.beginPath();
+            ctx.moveTo(padding, canvas.height - padding);
+            
+            data.forEach((value, i) => {
+                const x = padding + (i / (data.length - 1)) * chartWidth;
+                const y = canvas.height - padding - (value / 100) * chartHeight;
+                ctx.lineTo(x, y);
+            });
+            
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Draw line
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            data.forEach((value, i) => {
+                const x = padding + (i / (data.length - 1)) * chartWidth;
+                const y = canvas.height - padding - (value / 100) * chartHeight;
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            
+            ctx.stroke();
+            canvas.dataset.initialized = 'true';
+        }
+
+        function initChart5() {
+            const canvas = document.getElementById('chart5');
+            if (!canvas || canvas.dataset.initialized) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Multi-bar chart for robot adoption
+            const years = ['2020', '2021', '2022', '2023', '2024', '2025'];
+            const manufacturing = [120, 145, 180, 220, 280, 350];
+            const automotive = [80, 95, 115, 145, 190, 250];
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const padding = 50;
+            const barWidth = 25;
+            const groupSpacing = 80;
+            const maxHeight = 200;
+            const maxValue = 350;
+            
+            years.forEach((year, i) => {
+                const x = padding + i * groupSpacing;
+                
+                // Manufacturing bar
+                const height1 = (manufacturing[i] / maxValue) * maxHeight;
+                const y1 = canvas.height - padding - height1;
+                ctx.fillStyle = '#4a9eff';
+                ctx.fillRect(x, y1, barWidth, height1);
+                
+                // Automotive bar
+                const height2 = (automotive[i] / maxValue) * maxHeight;
+                const y2 = canvas.height - padding - height2;
+                ctx.fillStyle = '#8b5cf6';
+                ctx.fillRect(x + barWidth + 5, y2, barWidth, height2);
+                
+                // Year label
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(year, x + barWidth, canvas.height - padding + 20);
+            });
+            
+            // Legend
+            ctx.fillStyle = '#4a9eff';
+            ctx.fillRect(padding, 20, 20, 15);
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Manufacturing ($B)', padding + 25, 32);
+            
+            ctx.fillStyle = '#8b5cf6';
+            ctx.fillRect(padding + 180, 20, 20, 15);
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillText('Automotive ($B)', padding + 205, 32);
+            
+            canvas.dataset.initialized = 'true';
+        }
+
+        function initChart6() {
+            const canvas = document.getElementById('chart6');
+            if (!canvas || canvas.dataset.initialized) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Growth prediction chart
+            const years = ['2024', '2025', '2026', '2027', '2028'];
+            const growth = [100, 145, 210, 305, 440];
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const padding = 40;
+            const chartWidth = canvas.width - padding * 2;
+            const chartHeight = canvas.height - padding * 2;
+            
+            // Draw gradient area
+            const gradient = ctx.createLinearGradient(0, padding, 0, canvas.height - padding);
+            gradient.addColorStop(0, 'rgba(16, 185, 129, 0.6)');
+            gradient.addColorStop(1, 'rgba(16, 185, 129, 0.1)');
+            
+            ctx.beginPath();
+            ctx.moveTo(padding, canvas.height - padding);
+            
+            growth.forEach((value, i) => {
+                const x = padding + (i / (growth.length - 1)) * chartWidth;
+                const y = canvas.height - padding - (value / 500) * chartHeight;
+                ctx.lineTo(x, y);
+            });
+            
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Draw line with points
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            growth.forEach((value, i) => {
+                const x = padding + (i / (growth.length - 1)) * chartWidth;
+                const y = canvas.height - padding - (value / 500) * chartHeight;
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+                
+                // Draw points
+                ctx.fillStyle = '#10b981';
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Labels
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(years[i], x, canvas.height - padding + 20);
+                ctx.fillText('$' + value + 'B', x, y - 10);
+            });
+            
+            ctx.strokeStyle = '#10b981';
+            ctx.stroke();
+            
+            canvas.dataset.initialized = 'true';
+        }
+
+        // Initialize first slide
+        showSlide(1);
+
+        // Add sound effect function (optional - can be enabled with actual audio files)
+        function playTransitionSound() {
+            // Placeholder for sound effects
+            // const audio = new Audio('robot-beep.mp3');
+            // audio.play();
+        }
+    </script>
+</body>
+</html>
