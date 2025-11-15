@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head> 
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Multi-Agent Systems: Communication & Innovation</title>
+<style>
+  /* ---------- RESET & SAFETY ---------- */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html.custom-cursor * { cursor: none; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg,#0a0e27 0%,#1a1f3a 50%,#0f1419 100%);
+    color: #e0e6ed;
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* ---------- CUSTOM CURSOR ---------- */
+  #custom-cursor { position: fixed; width: 40px; height: 40px; pointer-events: none; z-index: 10000; transform: translate(-50%,-50%); transition: transform .08s linear; will-change: transform; }
+  .cursor-robot { width: 100%; height: 100%; position: relative; animation: robotFloat 2.4s ease-in-out infinite; }
+  .robot-body { width:24px;height:28px;background:linear-gradient(135deg,#4a9eff,#2563eb);border-radius:6px;position:absolute;left:8px;top:6px;box-shadow:0 0 10px rgba(74,158,255,0.5); }
+  .robot-head { width:18px;height:14px;background:linear-gradient(135deg,#60a5fa,#3b82f6);border-radius:4px;position:absolute;left:11px;top:0;box-shadow:0 0 8px rgba(96,165,250,0.4); }
+  .robot-eye{ width:4px;height:4px;background:#10b981;border-radius:50%;position:absolute;top:5px;animation:robotBlink 3s infinite; }
+  .robot-eye.left{ left:4px } .robot-eye.right{ right:4px }
+  .robot-antenna{ width:2px;height:6px;background:#8b5cf6;position:absolute;left:50%;transform:translateX(-50%);top:-6px; }
+  .robot-antenna::after{ content:''; width:4px;height:4px;background:#a78bfa;border-radius:50%;position:absolute;top:-4px;left:-1px; animation:antennaBlink 1.5s infinite; }
+  .robot-wheel{ width:8px;height:8px;background:#64748b;border-radius:50%;position:absolute;bottom:-4px;animation:wheelSpin 1s linear infinite; }
+  .robot-wheel.left{ left:2px } .robot-wheel.right{ right:2px }
+  .cursor-trail { position: fixed; width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:9999; opacity:0.9; animation:trailFade .9s ease-out forwards; background: radial-gradient(circle,#4a9eff 0%, transparent 70%); }
+
+  @keyframes robotFloat { 0%,100% { transform: translateY(0px);} 50% { transform: translateY(-3px);} }
+  @keyframes robotBlink { 0%,90%,100% { opacity: 1; } 95% { opacity: 0; } }
+  @keyframes antennaBlink { 0%,50%,100%{ box-shadow:0 0 5px #a78bfa } 25%,75%{ box-shadow:0 0 15px #a78bfa, 0 0 25px #8b5cf6 } }
+  @keyframes wheelSpin { from{ transform: rotate(0deg) } to{ transform: rotate(360deg) } }
+  @keyframes trailFade { to{ opacity: 0; transform: scale(.5); } }
+
+  /* ---------- PARTICLES ---------- */
+  .particles { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:hidden; }
+  .particle { position:absolute; width:2px;height:2px;border-radius:50%; background: rgba(74,158,255,0.5); opacity:0; animation:particleFloat linear infinite; }
+  @keyframes particleFloat {
+    0% { transform: translateY(120vh); opacity:0; }
+    10% { opacity:1; }
+    90% { opacity:1; }
+    100% { transform: translateY(-120px); opacity:0; }
+  }
+
+  /* ---------- PRESENTATION & SLIDES ---------- */
+  .presentation { width:100vw; height: 100vh; position:relative; z-index:2; overflow:hidden; padding-bottom: 100px; }
+  .slide {
+    width:100%;
+    height:auto;
+    min-height: 100vh;
+    position:absolute;
+    top:0;
+    left:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:60px;
+    opacity:0;
+    transform:translateX(100%);
+    transition: all .7s cubic-bezier(.68,-.55,.265,1.55);
+    overflow: visible;
+  }
+  .slide.active { opacity:1; transform:translateX(0); z-index:3; }
+  .slide.prev { transform:translateX(-100%); z-index:2; }
+
+  .slide .content-box {
+    background: rgba(15,23,42,0.7);
+    border:2px solid rgba(74,158,255,0.25);
+    border-radius:20px;
+    padding:30px;
+    max-width:1200px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    max-height: none;
+    overflow-y: visible;
+    padding-bottom: 20px;
+  }
+
+  .slide.scrollable .content-box {
+    max-height: 80vh;
+    overflow-y: auto;
+    padding-right: 12px;
+  }
+
+  /* ---------- HEADINGS ---------- */
+  h1 { font-size:3.2rem; font-weight:700; background:linear-gradient(135deg,#4a9eff 0%,#a78bfa 50%,#10b981 100%); -webkit-background-clip:text; -webkit-text-fill-color: transparent; margin-bottom:18px; text-align:center; animation:titleGlow 3s ease-in-out infinite; }
+  @keyframes titleGlow { 0%,100%{ filter: drop-shadow(0 0 20px rgba(74,158,255,0.45)); } 50%{ filter: drop-shadow(0 0 36px rgba(167,139,250,0.6)); } }
+  h2 { font-size:2rem; color:#4a9eff; margin-bottom:18px; text-shadow:0 0 18px rgba(74,158,255,0.35); text-align:center; }
+  h3 { font-size:1.2rem; color:#60a5fa; margin-bottom:12px; text-shadow:0 0 12px rgba(96,165,250,0.3); }
+
+  p, li { font-size:1.05rem; line-height:1.6; color:#cbd5e1; margin-bottom:12px; }
+  .subtitle { font-size:1.05rem; color:#a78bfa; text-align:center; margin-top:-8px; margin-bottom:18px; }
+
+  /* ---------- STATS & BOXES ---------- */
+  .stat-box { background: linear-gradient(135deg, rgba(74,158,255,0.06), rgba(139,92,246,0.05)); border-radius:12px; padding:18px; margin:12px 0; border:1px solid rgba(74,158,255,0.12); position:relative; overflow:hidden; }
+  .stat-number { font-size:2.2rem; font-weight:700; color:#10b981; text-shadow:0 0 12px rgba(16,185,129,0.4); }
+  .citation { font-size:.9rem; color:#94a3b8; font-style:italic; margin-top:8px; padding-left:14px; border-left:3px solid rgba(74,158,255,0.16); }
+
+  .diagram { display:flex; justify-content:space-around; align-items:center; gap:18px; flex-wrap:wrap; margin:20px 0; }
+  .diagram-node { background:linear-gradient(135deg, rgba(74,158,255,0.09), rgba(139,92,246,0.06)); border-radius:12px; padding:16px; min-width:160px; text-align:center; border:1px solid rgba(74,158,255,0.12); animation:nodeAppear .6s ease-out forwards; opacity:0; transform:scale(.6); }
+  @keyframes nodeAppear { to { opacity:1; transform:scale(1) } }
+  .diagram-arrow { font-size:1.6rem; color:#10b981; animation:arrowPulse 2s ease-in-out infinite; }
+  @keyframes arrowPulse { 0%,100%{ transform:scale(1); opacity:.6 } 50%{ transform:scale(1.15); opacity:1 } }
+
+  ul { list-style:none; padding-left:0; }
+  li { position:relative; padding-left:30px; margin-bottom:12px; opacity:0; transform:translateX(-20px); animation:listItemAppear .45s ease-out forwards; }
+  li::before { content:'⚡'; position:absolute; left:0; font-size:1.1rem; color:#10b981; animation:iconGlow 2s ease-in-out infinite; }
+  @keyframes listItemAppear { to { opacity:1; transform:translateX(0); } }
+  @keyframes iconGlow { 0%,100%{ filter:drop-shadow(0 0 6px rgba(16,185,129,0.4)); } 50%{ filter:drop-shadow(0 0 14px rgba(16,185,129,0.7)); } }
+
+  .robot-assistant { position:absolute; width:80px; height:80px; animation:robotMove 18s linear infinite; bottom:20px; left:-120px; opacity:.9; }
+  @keyframes robotMove {
+    0%   { left:-120px; bottom:20px; transform:translateX(0) rotate(0deg); }
+    45%  { left:50%; bottom:40px; transform:translateX(-50%) rotate(10deg); }
+    100% { left:calc(100% + 120px); bottom:20px; transform:translateX(0) rotate(0deg); }
+  }
+
+  /* ---------- Navigation ---------- */
+  .nav-controls { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; gap:14px; align-items:center; }
+  .nav-btn { background:linear-gradient(135deg,#4a9eff,#2563eb); border:2px solid rgba(74,158,255,0.35); color:white; padding:10px 18px; font-size:1rem; border-radius:999px; cursor:pointer; transition: all .18s ease; box-shadow:0 6px 20px rgba(74,158,255,0.18); }
+  .nav-btn:hover, .nav-btn:focus { transform:translateY(-3px); box-shadow:0 10px 30px rgba(74,158,255,0.28); outline:none; }
+
+  .slide-counter { background: rgba(15,23,42,0.85); border-radius:20px; padding:8px 14px; border:1px solid rgba(74,158,255,0.12); color:#4a9eff; font-weight:600; }
+
+  .grid-2 { display:grid; grid-template-columns: repeat(auto-fit,minmax(320px,1fr)); gap:18px; width:100%; max-width:1200px; }
+  .step-indicator { margin-bottom:12px; background:linear-gradient(135deg,#10b981,#059669); color:white; padding:8px 14px; border-radius:20px; font-weight:700; box-shadow:0 0 12px rgba(16,185,129,0.25); display: inline-block; }
+
+  /* ---------- GAME TIME ANIMATIONS ---------- */
+  .treasure-chest { animation: chestBounce 2s ease-in-out infinite; }
+  @keyframes chestBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-10px) scale(1.05); }
+  }
+  
+  .chest-lid { animation: lidOpen 3s ease-in-out infinite; transform-origin: 100px 100px; }
+  @keyframes lidOpen {
+    0%, 70% { transform: rotate(0deg); }
+    80%, 95% { transform: rotate(-25deg); }
+    100% { transform: rotate(0deg); }
+  }
+  
+  .floating-coin {
+    font-size: 3rem;
+    display: inline-block;
+    animation: coinFloat 2s ease-in-out infinite;
+  }
+  @keyframes coinFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+  }
+
+  @media (max-width:900px) {
+    h1 { font-size:2rem; }
+    .slide { padding:28px; }
+    .robot-assistant { display:none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cursor-robot, .robot-assistant, .diagram-node, .diagram-arrow, li::before, .treasure-chest, .chest-lid, .floating-coin { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div id="custom-cursor" aria-hidden="true">
+    <div class="cursor-robot" role="presentation">
+      <div class="robot-antenna"></div>
+      <div class="robot-head">
+        <div class="robot-eye left"></div>
+        <div class="robot-eye right"></div>
+      </div>
+      <div class="robot-body"></div>
+      <div class="robot-wheel left"></div>
+      <div class="robot-wheel right"></div>
+    </div>
+  </div>
+
+  <!-- Particle Background -->
+  <div class="particles" id="particles" aria-hidden="true"></div>
+
+  <!-- Robot assistant (decorative) -->
+  <svg class="robot-assistant" viewBox="0 0 100 100" aria-hidden="true">
+    <defs>
+      <linearGradient id="robotGradMain" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#4a9eff"/>
+        <stop offset="100%" stop-color="#8b5cf6"/>
+      </linearGradient>
+    </defs>
+    <rect x="20" y="35" width="60" height="45" rx="6" fill="url(#robotGradMain)"/>
+    <rect x="35" y="20" width="30" height="20" rx="4" fill="#60a5fa"/>
+    <circle cx="40" cy="30" r="3" fill="#10b981"/>
+    <circle cx="60" cy="30" r="3" fill="#10b981"/>
+  </svg>
+
+  <!-- Presentation -->
+  <div class="presentation" role="main">
+    <!-- Slide 1 -->
+    <div class="slide active" data-slide="1">
+      <h1>Communication in Multi-Agent Systems</h1>
+      <p class="subtitle">Robotics, Innovation & The Future of Collective AI</p>
+      <div class="content-box" style="text-align:center;">
+        <p style="font-size:1.05rem;color:#cdc3e9">🤖 Exploring how intelligent agents collaborate, communicate, and achieve goals 🤖</p>
+      </div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide" data-slide="2">
+      <h2>What is Multi-Agent Systems (MAS)?</h2>
+      <div class="content-box">
+        <p><strong>Multi-Agent Systems</strong> are computational systems where multiple intelligent agents interact and collaborate to achieve a desired goal.</p>
+        <div class="diagram">
+          <div class="diagram-node" style="animation-delay:.15s;">
+            <h3>🤖 Agent 1</h3>
+          </div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node" style="animation-delay:.3s;">
+            <h3>🔗 Communication</h3>
+          </div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node" style="animation-delay:.45s;">
+            <h3>🤖 Agent 2</h3>
+          </div>
+        </div>
+        <div class="stat-box"><p><span class="stat-number">40%</span> more efficient collective decision-making</p><p class="citation">Source: IEEE Transactions on Robotics, 2023</p></div>
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide" data-slide="3">
+      <h2>Main Objective: Agent Communication</h2>
+      <div class="content-box">
+        <p>Effective communication between agents is the backbone of successful MAS implementation.</p>
+        <div class="diagram" style="margin-top:18px;">
+          <div class="diagram-node"><h3>📥 Input</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>🔄 Process</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>🤝 Collaborate</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>📤 Output</h3></div>
+        </div>
+        <div class="stat-box" style="margin-top:18px;"><p><span class="stat-number">50%</span> reduction in latency for distributed systems</p><p class="citation">Source: Springer, 2024</p></div>
+      </div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide" data-slide="4">
+      <div class="step-indicator">STEP 1</div>
+      <h2>Interface Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Takes user input, categorizes it, and passes it to the appropriate agent.</p>
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <h3>How It Works:</h3>
+            <ul>
+              <li>Receives user input</li>
+              <li>Analyzes input type and intent</li>
+              <li>Categorizes the input</li>
+              <li>Routes to specialized agents</li>
+            </ul>
+          </div>
+          <div class="stat-box">
+            <p><span class="stat-number">35%</span> improvement in user-agent interaction</p>
+            <p class="citation">Source: Nature AI, 2023</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide" data-slide="5">
+      <div class="step-indicator">STEP 2</div>
+      <h2>Information Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Extracts keywords and important data.</p>
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <h3>Key Functions:</h3>
+            <ul>
+              <li>Natural Language Processing (NLP)</li>
+              <li>Keyword extraction & tagging</li>
+              <li>Entity recognition</li>
+              <li>Context understanding</li>
+            </ul>
+          </div>
+          <div class="stat-box">
+            <p><span class="stat-number">60%</span> boost in accuracy</p>
+            <p class="citation">Source: ACM, 2024</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6 -->
+    <div class="slide" data-slide="6">
+      <div class="step-indicator">STEP 3</div>
+      <h2>Task Manager / Orchestrator</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Divides complex tasks into subtasks and assigns them to specialized agents.</p>
+        <div class="diagram" style="margin-top:12px;">
+          <div class="diagram-node"><h3>📋 Main Task</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+            <div class="diagram-node" style="min-width:120px;"><p>Subtask A</p></div>
+            <div class="diagram-node" style="min-width:120px;"><p>Subtask B</p></div>
+            <div class="diagram-node" style="min-width:120px;"><p>Subtask C</p></div>
+          </div>
+        </div>
+        <div class="stat-box" style="margin-top:12px;"><p><span class="stat-number">45%</span> enhancement in MAS productivity</p><p class="citation">Source: World Economic Forum, 2024</p></div>
+      </div>
+    </div>
+
+    <!-- Slide 7 -->
+    <div class="slide" data-slide="7">
+      <div class="step-indicator">STEP 4</div>
+      <h2>Data Retrieval Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Gathers needed information from databases, APIs, and external sources.</p>
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <h3>Capabilities:</h3>
+            <ul>
+              <li>Database queries (SQL, NoSQL)</li>
+              <li>API integration & web scraping</li>
+              <li>Real-time data streaming</li>
+              <li>Caching & optimization</li>
+            </ul>
+          </div>
+          <div class="stat-box">
+            <p><span class="stat-number">70%</span> reduction in query time</p>
+            <p class="citation">Source: Gartner, 2023</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8 -->
+    <div class="slide" data-slide="8">
+      <div class="step-indicator">STEP 5</div>
+      <h2>Quality Check Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Verifies and validates information to ensure accuracy and reliability.</p>
+        <div class="diagram" style="margin-top:12px;">
+          <div class="diagram-node"><h3>📊 Data Input</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>✓ Validation</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>🔍 Verification</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>✅ Approved</h3></div>
+        </div>
+        <div class="stat-box" style="margin-top:12px;"><p><span class="stat-number">55%</span> reduction of errors in MAS</p><p class="citation">Source: IEEE, 2023</p></div>
+      </div>
+    </div>
+
+    <!-- Slide 9 -->
+    <div class="slide" data-slide="9">
+      <div class="step-indicator">STEP 6</div>
+      <h2>Response Generation Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Prepares the final output and delivers it to the user in an appropriate format.</p>
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <h3>Output Formats:</h3>
+            <ul>
+              <li>Natural language responses</li>
+              <li>Structured data (JSON, XML)</li>
+              <li>Visualizations & reports</li>
+              <li>Action commands</li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top:12px;font-size:1.05rem;text-align:center;color:#10b981;">🎯 Complete MAS Communication Pipeline Achieved! 🎯</p>
+      </div>
+    </div>
+
+    <!-- Slide 10 - GAME TIME: TREASURE HUNT -->
+    <div class="slide" data-slide="10">
+      <h2 style="font-size:3.5rem;margin-bottom:20px;">🎮 Game Time! 🎮</h2>
+      <div class="content-box" style="text-align:center;position:relative;overflow:visible;">
+        <h3 style="font-size:2.2rem;color:#f59e0b;margin-bottom:20px;">🏴‍☠️ Treasure Hunt Challenge 🏴‍☠️</h3>
+        <p style="font-size:1.3rem;color:#10b981;margin-bottom:30px;">Get ready to explore and discover hidden treasures!</p>
+        
+        <!-- Animated treasure chest -->
+        <div style="position:relative;margin:30px auto;width:200px;height:200px;">
+          <svg viewBox="0 0 200 200" style="width:100%;height:100%;" class="treasure-chest">
+            <defs>
+              <linearGradient id="chestGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1"/>
+                <stop offset="50%" style="stop-color:#ffed4e;stop-opacity:1"/>
+                <stop offset="100%" style="stop-color:#ffa500;stop-opacity:1"/>
+              </linearGradient>
+              <radialGradient id="gemGlow">
+                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1"/>
+                <stop offset="100%" style="stop-color:#059669;stop-opacity:0.3"/>
+              </radialGradient>
+            </defs>
+            
+            <!-- Chest base -->
+            <rect x="40" y="100" width="120" height="80" fill="#8b4513" stroke="#654321" stroke-width="3" rx="5"/>
+            <rect x="45" y="105" width="110" height="70" fill="#a0522d" rx="3"/>
+            
+            <!-- Chest lid (animated) -->
+            <g class="chest-lid" style="transform-origin: 100px 100px;">
+              <rect x="35" y="60" width="130" height="45" fill="#8b4513" stroke="#654321" stroke-width="3" rx="5"/>
+              <rect x="40" y="65" width="120" height="35" fill="#a0522d" rx="3"/>
+              <circle cx="100" cy="82" r="8" fill="url(#chestGold)"/>
+            </g>
+            
+            <!-- Sparkles coming out -->
+            <g class="sparkles">
+              <circle cx="100" cy="70" r="3" fill="#ffed4e" opacity="0">
+                <animate attributeName="cy" values="70;30;20" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="80" cy="70" r="2" fill="#4a9eff" opacity="0">
+                <animate attributeName="cy" values="70;35;25" dur="2.3s" repeatCount="indefinite" begin="0.3s"/>
+                <animate attributeName="opacity" values="0;1;0" dur="2.3s" repeatCount="indefinite" begin="0.3s"/>
+              </circle>
+              <circle cx="120" cy="70" r="2" fill="#a78bfa" opacity="0">
+                <animate attributeName="cy" values="70;40;30" dur="2.5s" repeatCount="indefinite" begin="0.6s"/>
+                <animate attributeName="opacity" values="0;1;0" dur="2.5s" repeatCount="indefinite" begin="0.6s"/>
+              </circle>
+            </g>
+            
+            <!-- Gems inside -->
+            <circle cx="90" cy="130" r="8" fill="url(#gemGlow)" class="gem">
+              <animate attributeName="r" values="8;10;8" dur="1.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="110" cy="135" r="7" fill="#4a9eff" class="gem">
+              <animate attributeName="r" values="7;9;7" dur="1.8s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="100" cy="145" r="6" fill="#a78bfa" class="gem">
+              <animate attributeName="r" values="6;8;6" dur="2s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+        </div>
+        
+        <!-- Floating coins animation -->
+        <div style="display:flex;justify-content:center;gap:30px;margin-top:20px;">
+          <div class="floating-coin" style="animation-delay:0s;">💰</div>
+          <div class="floating-coin" style="animation-delay:0.3s;">🪙</div>
+          <div class="floating-coin" style="animation-delay:0.6s;">💎</div>
+          <div class="floating-coin" style="animation-delay:0.9s;">🏆</div>
+        </div>
+        
+        <p style="font-size:1.2rem;color:#4a9eff;margin-top:40px;font-weight:600;">
+          Use your Multi-Agent System knowledge to find the treasure! 🗺️
+        </p>
+      </div>
+    </div>
+
+    <!-- Slide 11 - Continue with remaining slides... -->
+    <div class="slide" data-slide="11">
+      <h2>Thank You!</h2>
+      <div class="content-box" style="text-align:center;">
+        <p style="font-size:1.3rem;color:#10b981;">🤖 Multi-Agent Systems are the future! 🤖</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-controls" aria-hidden="false">
+    <button class="nav-btn" id="prevBtn" aria-label="Previous slide">← Previous</button>
+    <div class="slide-counter" aria-live="polite"><span id="currentSlide">1</span> / <span id="totalSlides">11</span></div>
+    <button class="nav-btn" id="nextBtn" aria-label="Next slide">Next →</button>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const cursor = document.getElementById('custom-cursor');
+  const particlesContainer = document.getElementById('particles');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const totalSlides = slides.length;
+  const currentSlideSpan = document.getElementById('currentSlide');
+  const totalSlidesSpan = document.getElementById('totalSlides');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  totalSlidesSpan.textContent = totalSlides;
+
+  /* Custom Cursor */
+  let customCursorReady = false;
+  let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+  
+  function enableCustomCursor() {
+    document.documentElement.classList.add('custom-cursor');
+    customCursorReady = true;
+  }
+  
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX; 
+    mouseY = e.clientY;
+    if (!customCursorReady) enableCustomCursor();
+    cursor.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+    
+    if (Math.random() > 0.75) {
+      const t = document.createElement('div');
+      t.className = 'cursor-trail';
+      t.style.left = (mouseX - 4) + 'px';
+      t.style.top = (mouseY - 4) + 'px';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 900);
+    }
+  });
+
+  if ('ontouchstart' in window) {
+    cursor.style.display = 'none';
+    document.documentElement.classList.remove('custom-cursor');
+  }
+
+  /* Particle Generator */
+  function createParticle() {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const left = Math.random() * 100;
+    const size = 1 + Math.random() * 3;
+    p.style.left = left + '%';
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    const delay = Math.random() * 20;
+    p.style.animationDelay = delay + 's';
+    p.style.animationDuration = (12 + Math.random() * 16) + 's';
+    particlesContainer.appendChild(p);
+    setTimeout(() => { p.remove(); }, (12 + 16) * 1000 + 2000);
+  }
+  
+  for (let i = 0; i < 45; i++) createParticle();
+  setInterval(() => { for (let i = 0; i < 3; i++) createParticle(); }, 2500);
+
+  /* Slide Navigation */
+  let currentSlide = 1;
+
+  function showSlide(n) {
+    if (n < 1) n = 1;
+    if (n > totalSlides) n = totalSlides;
+
+    slides.forEach((s, idx) => {
+      s.classList.remove('active', 'prev');
+      if (idx + 1 < n) s.classList.add('prev');
+    });
+
+    slides[n - 1].classList.add('active');
+    currentSlide = n;
+    currentSlideSpan.textContent = currentSlide;
+
+    const active = slides[n - 1];
+    active.querySelectorAll('li').forEach((li) => {
+      li.style.animation = 'none';
+      requestAnimationFrame(() => li.style.animation = '');
+    });
+    active.querySelectorAll('.diagram-node').forEach((dn) => {
+      dn.style.animation = 'none';
+      requestAnimationFrame(() => dn.style.animation = '');
+    });
+  }
+
+  prevBtn.addEventListener('click', () => showSlide(currentSlide - 1));
+  nextBtn.addEventListener('click', () => showSlide(currentSlide + 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') showSlide(currentSlide - 1);
+    if (e.key === 'ArrowRight') showSlide(currentSlide + 1);
+  });
+
+  showSlide(1);
+});
+</script>
+</body>
+</html>
