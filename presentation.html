@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Communication in Multi-Agent Systems (MAS)</title>
+    
+    <!-- Reveal.js CSS from CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        /* Robot Cursor */
+        * {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect x="10" y="8" width="12" height="14" fill="%23FFD700" stroke="%23000" stroke-width="1"/><circle cx="13" cy="12" r="1.5" fill="%23000"/><circle cx="19" cy="12" r="1.5" fill="%23000"/><rect x="13" y="16" width="6" height="2" fill="%23000"/><rect x="14" y="4" width="4" height="4" fill="%23FFD700" stroke="%23000" stroke-width="1"/><rect x="8" y="12" width="2" height="4" fill="%23FFD700" stroke="%23000" stroke-width="1"/><rect x="22" y="12" width="2" height="4" fill="%23FFD700" stroke="%23000" stroke-width="1"/><rect x="10" y="22" width="4" height="6" fill="%23FFD700" stroke="%23000" stroke-width="1"/><rect x="18" y="22" width="4" height="6" fill="%23FFD700" stroke="%23000" stroke-width="1"/></svg>'), auto;
+        }
+
+        .reveal {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .reveal h1, .reveal h2, .reveal h3 {
+            text-transform: none;
+            font-weight: bold;
+        }
+
+        .reveal section {
+            text-align: left;
+        }
+
+        .reveal .center-content {
+            text-align: center;
+        }
+
+        /* Animated Robot */
+        .robot {
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .rotating {
+            animation: rotate 3s linear infinite;
+        }
+
+        .pulsing {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* Gradient backgrounds */
+        .gradient-bg-1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .gradient-bg-2 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .gradient-bg-3 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .gradient-bg-4 {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .gradient-bg-5 {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        /* Agent boxes */
+        .agent-box {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #FFD700;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s;
+        }
+
+        .agent-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Flow diagram */
+        .flow-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .flow-arrow {
+            font-size: 3em;
+            color: #FFD700;
+            margin: 0 10px;
+        }
+
+        /* Challenge cards */
+        .challenge-card {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Stats box */
+        .stat-box {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px;
+            min-width: 150px;
+        }
+
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        /* Quiz button */
+        .quiz-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.5em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .quiz-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        /* Treasure chest */
+        .treasure {
+            font-size: 5em;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+
+        /* Graph container */
+        .graph-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        /* Reference style */
+        .reference {
+            font-size: 0.6em;
+            color: #aaa;
+            margin-top: 20px;
+        }
+
+        /* Small robot images */
+        .small-robot {
+            width: 100px;
+            height: 100px;
+            display: inline-block;
+            margin: 10px;
+        }
+
+        /* Video container */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background: #000;
+            border-radius: 10px;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Emoji style */
+        .emoji {
+            font-size: 1.5em;
+        }
+
+        /* Diagram styles */
+        .diagram-box {
+            background: rgba(255, 255, 255, 0.15);
+            border: 3px solid #4facfe;
+            border-radius: 20px;
+            padding: 15px;
+            margin: 10px;
+            display: inline-block;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .arrow-down {
+            font-size: 2em;
+            color: #FFD700;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        /* Future card */
+        .future-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 5px solid #FFD700;
+        }
+
+        /* Wondering robot animation */
+        @keyframes wonder {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        .wondering {
+            animation: wonder 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            
+            <!-- Slide 1: Title Slide -->
+            <section class="gradient-bg-1 center-content" data-transition="zoom">
+                <h1 class="pulsing">🤖 Communication in Multi-Agent Systems (MAS) 🤖</h1>
+                <h3>How Robots Talk to Each Other (And Why It Matters!)</h3>
+                <div style="margin-top: 50px;">
+                    <span class="robot" style="font-size: 5em;">🤖</span>
+                    <span class="robot" style="font-size: 5em; animation-delay: 0.3s;">🤖</span>
+                    <span class="robot" style="font-size: 5em; animation-delay: 0.6s;">🤖</span>
+                </div>
+                <p style="margin-top: 30px; font-size: 1.2em;">An Interactive Journey into Social & Collective AI</p>
+                <aside class="notes">
+                    Welcome everyone! Today we're diving into the fascinating world of Multi-Agent Systems and how these intelligent agents communicate. Think of it as understanding how robots have conversations - but way cooler! We'll have some fun along the way with a treasure hunt game, so stay engaged!
+                </aside>
+            </section>
+
+            <!-- Slide 2: What is MAS? -->
+            <section class="gradient-bg-2" data-transition="convex">
+                <h2>🎯 What is a Multi-Agent System (MAS)?</h2>
+                <div class="agent-box">
+                    <p><strong>Definition:</strong> A system composed of multiple intelligent agents that interact and coordinate to achieve individual or collective goals.</p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <div class="stat-box">
+                        <div class="stat-number">Multiple</div>
+                        <div>Agents</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">∞</div>
+                        <div>Interactions</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">1</div>
+                        <div>Goal</div>
+                    </div>
+                </div>
+                <p style="margin-top: 30px;"><span class="emoji">💡</span> <strong>Think of it like:</strong> A team of specialists working together on a complex project - each has their expertise, but they need to communicate to succeed!</p>
+                <p class="reference">Reference: Wooldridge, M. (2009). An Introduction to MultiAgent Systems. Wiley.</p>
+                <aside class="notes">
+                    MAS is essentially a society of intelligent agents. Each agent is autonomous, can perceive its environment, and can act upon it. The magic happens when these agents communicate and coordinate. It's like having a team where everyone is an expert in their field, but they need to talk to each other to solve complex problems.
+                </aside>
+            </section>
+
+            <!-- Slide 3: Relevance to Social & Collective AI -->
+            <section class="gradient-bg-3" data-transition="slide">
+                <h2>🌐 Why MAS Matters for Social & Collective AI</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
+                    <div class="agent-box">
+                        <h3>🧠 Social Intelligence</h3>
+                        <p>Agents learn from each other, share knowledge, and develop collective intelligence</p>
+                    </div>
+                    <div class="agent-box">
+                        <h3>🤝 Collaboration</h3>
+                        <p>Distributed problem-solving where agents work together on complex tasks</p>
+                    </div>
+                    <div class="agent-box">
+                        <h3>🎭 Emergent Behavior</h3>
+                        <p>Simple agent interactions lead to complex, intelligent system behavior</p>
+                    </div>
+                    <div class="agent-box">
+                        <h3>⚡ Scalability</h3>
+                        <p>Add more agents to handle bigger problems - like hiring more team members!</p>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; text-align: center;"><span class="emoji">🚀</span> <strong>Real Impact:</strong> From autonomous vehicles to smart cities, MAS powers the future of AI!</p>
+                <p class="reference">Reference: Stone, P., & Veloso, M. (2000). Multiagent systems: A survey from a machine learning perspective. Autonomous Robots, 8(3), 345-383.</p>
+                <aside class="notes">
+                    MAS is at the heart of Social and Collective AI. When we talk about AI systems that can work together, learn from each other, and solve problems collectively, we're talking about MAS. This is crucial for building AI that can handle real-world complexity - no single agent can do everything!
+                </aside>
+            </section>
+
+            <!-- Slide 4: Main Objective of Communication -->
+            <section class="gradient-bg-4" data-transition="concave">
+                <h2>🎯 Main Objective: Why Do Agents Need to Talk?</h2>
+                <div style="text-align: center; margin: 40px 0;">
+                    <div class="diagram-box pulsing">
+                        <h3>🎯 Coordination</h3>
+                        <p>Avoid conflicts & work in sync</p>
+                    </div>
+                    <div class="arrow-down">⬇️</div>
+                    <div class="diagram-box pulsing" style="animation-delay: 0.3s;">
+                        <h3>📊 Information Sharing</h3>
+                        <p>Exchange data & knowledge</p>
+                    </div>
+                    <div class="arrow-down">⬇️</div>
+                    <div class="diagram-box pulsing" style="animation-delay: 0.6s;">
+                        <h3>🎪 Task Allocation</h3>
+                        <p>Distribute work efficiently</p>
+                    </div>
+                    <div class="arrow-down">⬇️</div>
+                    <div class="diagram-box pulsing" style="animation-delay: 0.9s;">
+                        <h3>🏆 Goal Achievement</h3>
+                        <p>Accomplish collective objectives</p>
+                    </div>
+                </div>
+                <p style="text-align: center; font-size: 1.3em;"><strong>Bottom Line:</strong> Communication = Collaboration = Success! 🎉</p>
+                <p class="reference">Reference: Ferber, J. (1999). Multi-Agent Systems: An Introduction to Distributed Artificial Intelligence. Addison-Wesley.</p>
+                <aside class="notes">
+                    Communication is the backbone of MAS. Without it, agents are just isolated entities. With communication, they become a coordinated team. The main objectives are coordination (so they don't step on each other's toes), information sharing (so they all have the knowledge they need), task allocation (so work is distributed efficiently), and ultimately achieving goals that no single agent could accomplish alone.
+                </aside>
+            </section>
+
+            <!-- Slide 5: How It Works - Interface Agent -->
+            <section class="gradient-bg-5" data-transition="zoom">
+                <h2>🔧 How It Works: Interface Agent</h2>
+                <div class="flow-container" style="margin-top: 40px;">
+                    <div class="agent-box" style="flex: 1;">
+                        <h3>👤 User Input</h3>
+                        <p style="font-size: 3em;">💬</p>
+                        <p>"Hey robot, help me!"</p>
+                    </div>
+                    <div class="flow-arrow">➡️</div>
+                    <div class="agent-box" style="flex: 1;">
+                        <h3>🎭 Interface Agent</h3>
+                        <p style="font-size: 3em;">🤖</p>
+                        <p><strong>Role:</strong> The friendly face of the system</p>
+                        <ul style="text-align: left; font-size: 0.9em;">
+                            <li>Receives user requests</li>
+                            <li>Translates human language</li>
+                            <li>Routes to appropriate agents</li>
+                            <li>Manages user interaction</li>
+                        </ul>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; text-align: center;"><span class="emoji">🎯</span> <strong>Think of it as:</strong> The receptionist who greets you and directs you to the right department!</p>
+                <p class="reference">Reference: Maes, P. (1994). Agents that reduce work and information overload. Communications of the ACM, 37(7), 30-40.</p>
+                <aside class="notes">
+                    The Interface Agent is your first point of contact. It's the agent that understands human input - whether that's text, voice, or gestures. It's responsible for taking that messy human communication and turning it into something the system can work with. Then it figures out which other agents need to be involved to handle the request.
+                </aside>
+            </section>
+
+            <!-- Slide 6: Information Agent -->
+            <section class="gradient-bg-1" data-transition="slide">
+                <h2>📚 Information Agent: The Knowledge Keeper</h2>
+                <div style="display: flex; align-items: center; justify-content: space-around; margin-top: 40px;">
+                    <div class="agent-box" style="flex: 1;">
+                        <h3 class="rotating" style="display: inline-block;">🧠</h3>
+                        <h3>Information Agent</h3>
+                        <p><strong>Responsibilities:</strong></p>
+                        <ul style="font-size: 0.9em;">
+                            <li>🔍 Searches databases</li>
+                            <li>📖 Retrieves relevant data</li>
+                            <li>🔄 Updates knowledge base</li>
+                            <li>🎯 Filters information</li>
+                            <li>📊 Provides context</li>
+                        </ul>
+                    </div>
+                    <div class="flow-arrow">⚡</div>
+                    <div style="flex: 1;">
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">📚</p>
+                            <p>Knowledge Base</p>
+                        </div>
+                        <div class="arrow-down">⬇️</div>
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">🌐</p>
+                            <p>External APIs</p>
+                        </div>
+                        <div class="arrow-down">⬇️</div>
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">💾</p>
+                            <p>Databases</p>
+                        </div>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; text-align: center;"><span class="emoji">💡</span> <strong>Analogy:</strong> The librarian who knows exactly where every book is and what's in it!</p>
+                <p class="reference">Reference: Klusch, M. (2001). Information agent technology for the Internet: A survey. Data & Knowledge Engineering, 36(3), 337-372.</p>
+                <aside class="notes">
+                    The Information Agent is like the research department. When the system needs to know something, this agent goes and finds it. It searches through databases, queries APIs, and retrieves relevant information. It's crucial for making informed decisions. Without good information, even the smartest agents can't do their job properly.
+                </aside>
+            </section>
+
+            <!-- Slide 7: Task Agent -->
+            <section class="gradient-bg-2" data-transition="convex">
+                <h2>⚙️ Task Agent: The Doer</h2>
+                <div style="margin-top: 40px;">
+                    <div class="agent-box" style="text-align: center;">
+                        <h3><span class="pulsing" style="font-size: 3em; display: inline-block;">⚙️</span></h3>
+                        <h3>Task Agent</h3>
+                        <p style="font-size: 1.2em;"><strong>Mission:</strong> Execute actions and get things done!</p>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 30px;">
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">📋</p>
+                            <h4>Planning</h4>
+                            <p>Break down tasks into steps</p>
+                        </div>
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">🎬</p>
+                            <h4>Execution</h4>
+                            <p>Perform the actual work</p>
+                        </div>
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">📊</p>
+                            <h4>Monitoring</h4>
+                            <p>Track progress & status</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <p><strong>Examples:</strong></p>
+                        <p>🚗 Navigate a route | 📦 Sort packages | 🏭 Assemble products | 🎨 Generate content</p>
+                    </div>
+                </div>
+                <p class="reference">Reference: Rao, A. S., & Georgeff, M. P. (1995). BDI agents: From theory to practice. ICMAS, 95, 312-319.</p>
+                <aside class="notes">
+                    The Task Agent is where the rubber meets the road. This is the agent that actually does stuff. It takes the plan, breaks it down into executable steps, and carries them out. It might control a robot arm, send an email, process data, or any number of actions. It's constantly monitoring its own progress and can adapt if things don't go as planned.
+                </aside>
+            </section>
+
+            <!-- Slide 8: Quality Check -->
+            <section class="gradient-bg-3" data-transition="zoom">
+                <h2>✅ Quality Check: The Inspector</h2>
+                <div style="margin-top: 40px;">
+                    <div class="flow-container">
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">⚙️</p>
+                            <p>Task Completed</p>
+                        </div>
+                        <div class="flow-arrow">➡️</div>
+                        <div class="agent-box" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                            <h3><span style="font-size: 3em;">🔍</span></h3>
+                            <h3>Quality Check Agent</h3>
+                            <p><strong>Validates:</strong></p>
+                            <ul style="font-size: 0.9em;">
+                                <li>✓ Accuracy of results</li>
+                                <li>✓ Completeness of task</li>
+                                <li>✓ Compliance with standards</li>
+                                <li>✓ Error detection</li>
+                                <li>✓ Performance metrics</li>
+                            </ul>
+                        </div>
+                        <div class="flow-arrow">➡️</div>
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">✅</p>
+                            <p>Approved!</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 40px; text-align: center;">
+                        <div class="stat-box" style="background: rgba(67, 233, 123, 0.3);">
+                            <div class="stat-number">99.9%</div>
+                            <div>Target Accuracy</div>
+                        </div>
+                        <div class="stat-box" style="background: rgba(239, 71, 111, 0.3);">
+                            <div class="stat-number">&lt;0.1%</div>
+                            <div>Error Rate</div>
+                        </div>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; text-align: center;"><span class="emoji">🎯</span> <strong>Like:</strong> The quality assurance team that makes sure everything is perfect before shipping!</p>
+                <p class="reference">Reference: Jennings, N. R., et al. (1998). A roadmap of agent research and development. Autonomous Agents and Multi-Agent Systems, 1(1), 7-38.</p>
+                <aside class="notes">
+                    Quality Check is crucial - it's the agent that makes sure everything was done correctly. It validates results, checks for errors, and ensures that the output meets the required standards. If something's wrong, it can trigger a retry or alert other agents. This is especially important in critical applications like healthcare or autonomous vehicles where mistakes can have serious consequences.
+                </aside>
+            </section>
+
+            <!-- Slide 9: Response Generation -->
+            <section class="gradient-bg-4" data-transition="slide">
+                <h2>💬 Response Generation: Talking Back to Humans</h2>
+                <div style="margin-top: 40px;">
+                    <div class="flow-container">
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">📊</p>
+                            <p>Processed Data</p>
+                        </div>
+                        <div class="flow-arrow">➡️</div>
+                        <div class="agent-box" style="flex: 2;">
+                            <h3><span class="pulsing" style="font-size: 3em; display: inline-block;">💬</span></h3>
+                            <h3>Response Generator</h3>
+                            <p><strong>Transforms:</strong></p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                                <div>
+                                    <p>🤖 Machine format</p>
+                                    <p style="font-size: 2em;">⬇️</p>
+                                    <p>👤 Human language</p>
+                                </div>
+                                <div>
+                                    <p><strong>Features:</strong></p>
+                                    <ul style="font-size: 0.85em; text-align: left;">
+                                        <li>Natural language generation</li>
+                                        <li>Context-aware responses</li>
+                                        <li>Personalization</li>
+                                        <li>Multi-modal output</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flow-arrow">➡️</div>
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">😊</p>
+                            <p>Happy User!</p>
+                        </div>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; text-align: center;"><span class="emoji">🎭</span> <strong>The Translator:</strong> Converts robot-speak into friendly, understandable human language!</p>
+                <p class="reference">Reference: Reiter, E., & Dale, R. (2000). Building Natural Language Generation Systems. Cambridge University Press.</p>
+                <aside class="notes">
+                    The Response Generator is the final step - it takes all the work that's been done and presents it back to the user in a way they can understand. This might involve natural language generation, creating visualizations, or even generating speech. It's about making the system's output accessible and useful to humans. Good response generation can make the difference between a system that's technically correct but confusing, and one that's truly helpful.
+                </aside>
+            </section>
+
+            <!-- Slide 10: Complete Communication Flow -->
+            <section class="gradient-bg-5" data-transition="convex">
+                <h2>🔄 The Complete Communication Flow</h2>
+                <div style="margin-top: 30px; text-align: center;">
+                    <div class="diagram-box" style="background: rgba(255, 107, 107, 0.3);">
+                        <p style="font-size: 1.5em;">👤 User Query</p>
+                    </div>
+                    <div class="arrow-down">⬇️</div>
+                    <div class="diagram-box" style="background: rgba(102, 126, 234, 0.3);">
+                        <p style="font-size: 1.5em;">🎭 Interface Agent</p>
+                    </div>
+                    <div class="arrow-down">⬇️</div>
+                    <div style="display: flex; justify-content: center; gap: 20px;">
+                        <div class="diagram-box" style="background: rgba(67, 233, 123, 0.3);">
+                            <p style="font-size: 1.5em;">🧠 Info Agent</p>
+                        </div>
+                        <div class="diagram-box" style="background: rgba(245, 158, 11, 0.3);">
+                            <p style="font-size: 1.5em;">⚙️ Task Agent</p>
+                        </div>
+                    </div>
+                    <div class="arrow-down">⬇️</div>
+                    <div class="diagram-box" style="background: rgba(139, 92, 246, 0.3);">
+                        <p style="font-size: 1.5em;">🔍 Quality Check</p>
+                    </div>
+                    <div class="arrow-down">⬇️</div>
+                    <div class="diagram-box" style="background: rgba(236, 72, 153, 0.3);">
+                        <p style="font-size: 1.5em;">💬 Response Gen</p>
+                    </div>
+                    <div class="arrow-down">⬇️</div>
+                    <div class="diagram-box" style="background: rgba(34, 211, 238, 0.3);">
+                        <p style="font-size: 1.5em;">😊 User Receives Answer</p>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; text-align: center; font-size: 1.2em;"><strong>🎯 All agents communicate via message passing, shared memory, or blackboard systems!</strong></p>
+                <p class="reference">Reference: Foundation for Intelligent Physical Agents (FIPA). (2002). FIPA ACL Message Structure Specification.</p>
+                <aside class="notes">
+                    Here's the big picture! This is how all the agents work together in a typical MAS communication flow. The user makes a request, it goes through the interface agent, gets routed to the appropriate specialized agents (information and task agents), gets quality checked, and then a response is generated back to the user. Throughout this process, agents are constantly communicating with each other, sharing information, and coordinating their actions.
+                </aside>
+            </section>
+
+            <!-- Slide 11: GAME TIME! -->
+            <section class="gradient-bg-1 center-content" data-transition="zoom">
+                <h2>🎮 GAME TIME: MAS Treasure Hunt! 🎮</h2>
+                <div style="margin-top: 50px;">
+                    <p style="font-size: 1.5em;">Test your knowledge and find the treasure! 💎</p>
+                    <button class="quiz-btn" onclick="startQuiz()">
+                        🚀 START TREASURE HUNT 🚀
+                    </button>
+                    <div id="treasure" class="treasure">🏆💰🎉</div>
+                    <div id="score" style="margin-top: 30px; font-size: 2em; color: #FFD700;"></div>
+                </div>
+                <div style="margin-top: 50px;">
+                    <span class="robot" style="font-size: 4em;">🤖</span>
+                    <span style="font-size: 3em;">❓</span>
+                    <span class="robot" style="font-size: 4em; animation-delay: 0.5s;">🤖</span>
+                </div>
+                <aside class="notes">
+                    Time for some fun! This interactive quiz will test what we've learned so far. Answer the questions correctly to find the treasure. This is a great way to reinforce the concepts and keep everyone engaged. Don't worry - it's all in good fun!
+                </aside>
+            </section>
+
+            <!-- Slide 12: Applications - Real World -->
+            <section class="gradient-bg-2" data-transition="slide">
+                <h2>🌍 Real-World Applications</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
+                    <div class="agent-box">
+                        <h3>🏭 Smart Manufacturing</h3>
+                        <p>Robots coordinate on assembly lines</p>
+                        <p style="font-size: 2em;">🤖⚙️🔧</p>
+                    </div>
+                    <div class="agent-box">
+                        <h3>🚗 Autonomous Vehicles</h3>
+                        <p>Cars communicate to avoid collisions</p>
+                        <p style="font-size: 2em;">🚗🚙🚕</p>
+                    </div>
+                    <div class="agent-box">
+                        <h3>🏥 Healthcare Systems</h3>
+                        <p>Diagnostic agents collaborate</p>
+                        <p style="font-size: 2em;">⚕️💊🏥</p>
+                    </div>
+                    <div class="agent-box">
+                        <h3>🌆 Smart Cities</h3>
+                        <p>Traffic, energy, and services coordination</p>
+                        <p style="font-size: 2em;">🏙️🚦💡</p>
+                    </div>
+                </div>
+                <div style="margin-top: 30px;">
+                    <h3>🎬 Hyundai Robot Factory in Action:</h3>
+                    <div class="video-container">
+                        <iframe src="https://www.youtube.com/embed/qXZt4GGxGbY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+                <p class="reference">Reference: Leitão, P. (2009). Agent-based distributed manufacturing control: A state-of-the-art survey. Engineering Applications of Artificial Intelligence, 22(7), 979-991.</p>
+                <aside class="notes">
+                    MAS isn't just theory - it's being used right now in real applications! Smart manufacturing uses MAS for coordinating robots on assembly lines. Autonomous vehicles use it so cars can communicate and avoid accidents. Healthcare systems use it for diagnosis and treatment planning. Smart cities use it to coordinate traffic, energy distribution, and public services. The video shows Hyundai's robot factory where multiple robots work together seamlessly.
+                </aside>
+            </section>
+
+            <!-- Slide 13: Case Study - Autonomous Vehicles -->
+            <section class="gradient-bg-3" data-transition="convex">
+                <h2>🚗 Case Study: Autonomous Vehicle Communication</h2>
+                <div style="margin-top: 30px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <img src="https://images.unsplash.com/photo-1617886322207-baac2c5a3b5d?w=800&h=400&fit=crop" alt="Autonomous vehicles" style="border-radius: 15px; max-width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                    </div>
+                    <div class="agent-box">
+                        <h3>🎯 The Challenge:</h3>
+                        <p>Multiple self-driving cars need to navigate intersections, merge lanes, and avoid collisions without human intervention.</p>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 20px;">
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">📡</p>
+                            <h4>V2V Communication</h4>
+                            <p>Vehicle-to-Vehicle messaging</p>
+                        </div>
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">🗺️</p>
+                            <h4>Shared Mapping</h4>
+                            <p>Real-time environment updates</p>
+                        </div>
+                        <div class="diagram-box">
+                            <p style="font-size: 2em;">🤝</p>
+                            <h4>Negotiation</h4>
+                            <p>Cooperative decision-making</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <p><strong>Result:</strong> 40% reduction in traffic congestion, 90% fewer accidents! 🎉</p>
+                    </div>
+                </div>
+                <p class="reference">Reference: Chen, S., et al. (2015). Vehicle-to-everything (V2X) services supported by LTE-based systems and 5G. IEEE Communications Standards Magazine, 1(2), 70-76.</p>
+                <aside class="notes">
+                    Let's look at a concrete example: autonomous vehicles. Each car is an agent that needs to communicate with other cars and infrastructure. They share information about their position, speed, and intentions. They negotiate who goes first at intersections. They coordinate lane changes. This kind of communication is essential for safe and efficient autonomous driving. Studies show significant reductions in congestion and accidents when vehicles can communicate effectively.
+                </aside>
+            </section>
+
+            <!-- Slide 14: Challenge 1 - Interpretability -->
+            <section class="gradient-bg-4" data-transition="zoom">
+                <h2>⚠️ Challenge #1: Interpretability</h2>
+                <div style="margin-top: 40px;">
+                    <div class="challenge-card">
+                        <h3>🤔 The Problem:</h3>
+                        <p style="font-size: 1.2em;">How do we understand what agents are saying to each other?</p>
+                    </div>
+                    <div style="display: flex; justify-content: space-around; margin-top: 30px; align-items: center;">
+                        <div style="flex: 1;">
+                            <div class="agent-box">
+                                <p style="font-size: 3em;">🤖</p>
+                                <p>"01001000 01101001"</p>
+                            </div>
+                            <div style="text-align: center; margin: 20px 0;">
+                                <p style="font-size: 2em;">❓❓❓</p>
+                            </div>
+                            <div class="agent-box">
+                                <p style="font-size: 3em;">👤</p>
+                                <p>"What did they just say?!"</p>
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <h4>Why It Matters:</h4>
+                            <ul>
+                                <li>🔍 Debugging complex systems</li>
+                                <li>🛡️ Ensuring safety & compliance</li>
+                                <li>🎓 Building trust with users</li>
+                                <li>⚖️ Legal accountability</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <div class="stat-box">
+                            <div class="stat-number">73%</div>
+                            <div>of users don't trust AI they can't understand</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="reference">Reference: Doshi-Velez, F., & Kim, B. (2017). Towards a rigorous science of interpretable machine learning. arXiv preprint arXiv:1702.08608.</p>
+                <aside class="notes">
+                    One of the biggest challenges in MAS is interpretability. When agents communicate using complex protocols or learned languages, it can be very difficult for humans to understand what's being said. This is a problem for debugging, for ensuring safety, and for building trust. If we can't understand what agents are saying to each other, how can we be sure they're doing what we want? This is an active area of research.
+                </aside>
+            </section>
+
+            <!-- Slide 15: Challenge 2 - Security -->
+            <section class="gradient-bg-5" data-transition="slide">
+                <h2>🔒 Challenge #2: Security & Privacy</h2>
+                <div style="margin-top: 40px;">
+                    <div class="challenge-card" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <h3>🛡️ The Threat Landscape:</h3>
+                        <p>Agent communication channels can be vulnerable to attacks!</p>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
+                        <div class="agent-box" style="border-color: #ff6b6b;">
+                            <h4>🎭 Impersonation</h4>
+                            <p>Malicious agents pretending to be legitimate</p>
+                            <p style="font-size: 2em;">😈➡️🤖</p>
+                        </div>
+                        <div class="agent-box" style="border-color: #ff6b6b;">
+                            <h4>👂 Eavesdropping</h4>
+                            <p>Intercepting sensitive communications</p>
+                            <p style="font-size: 2em;">🕵️📡</p>
+                        </div>
+                        <div class="agent-box" style="border-color: #ff6b6b;">
+                            <h4>💉 Message Injection</h4>
+                            <p>Inserting false information</p>
+                            <p style="font-size: 2em;">🦠💬</p>
+                        </div>
+                        <div class="agent-box" style="border-color: #ff6b6b;">
+                            <h4>🚫 Denial of Service</h4>
+                            <p>Overwhelming agents with messages</p>
+                            <p style="font-size: 2em;">💥📨📨📨</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <p><strong>🔐 Solutions:</strong> Encryption, Authentication, Access Control, Blockchain</p>
+                    </div>
+                </div>
+                <p class="reference">Reference: Kravari, K., & Bassiliades, N. (2015). A survey of agent platforms. Journal of Artificial Societies and Social Simulation, 18(1), 11.</p>
+                <aside class="notes">
+                    Security is critical in MAS. Agent communication channels can be vulnerable to various attacks - impersonation, eavesdropping, message injection, and denial of service. These aren't just theoretical concerns; they're real threats, especially in applications like autonomous vehicles or financial systems. We need robust security measures including encryption, authentication, and access control. Some researchers are even exploring blockchain for secure agent communication.
+                </aside>
+            </section>
+
+            <!-- Slide 16: Challenge 3 - Bias & Control -->
+            <section class="gradient-bg-1" data-transition="convex">
+                <h2>⚖️ Challenge #3: Bias & Control</h2>
+                <div style="margin-top: 40px;">
+                    <div style="display: flex; gap: 30px; align-items: center;">
+                        <div style="flex: 1;">
+                            <div class="challenge-card" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                                <h3>🎯 The Issues:</h3>
+                                <ul>
+                                    <li><strong>Bias Propagation:</strong> Agents can amplify existing biases</li>
+                                    <li><strong>Loss of Control:</strong> Emergent behavior may be unpredictable</li>
+                                    <li><strong>Fairness:</strong> Ensuring equitable treatment</li>
+                                    <li><strong>Accountability:</strong> Who's responsible when things go wrong?</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="graph-container">
+                                <h4 style="text-align: center;">Bias Amplification Over Time</h4>
+                                <div style="position: relative; height: 200px; margin-top: 20px;">
+                                    <svg width="100%" height="200" style="background: rgba(255,255,255,0.1); border-radius: 10px;">
+                                        <polyline points="10,180 50,160 90,130 130,90 170,50 210,30" 
+                                                  fill="none" stroke="#ff6b6b" stroke-width="3"/>
+                                        <text x="10" y="195" fill="#fff" font-size="12">Time →</text>
+                                        <text x="5" y="15" fill="#fff" font-size="12">Bias ↑</text>
+                                        <circle cx="210" cy="30" r="5" fill="#ff6b6b"/>
+                                    </svg>
+                                </div>
+                                <p style="text-align: center; margin-top: 10px; font-size: 0.9em;">Without intervention, bias compounds!</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <p><strong>🎯 Solutions:</strong> Fairness constraints, human oversight, diverse training data, regular audits</p>
+                    </div>
+                </div>
+                <p class="reference">Reference: Mehrabi, N., et al. (2021). A survey on bias and fairness in machine learning. ACM Computing Surveys, 54(6), 1-35.</p>
+                <aside class="notes">
+                    Bias and control are major ethical challenges. When agents learn from data or from each other, they can propagate and even amplify biases. Emergent behavior in MAS can be unpredictable - the system might do things that no individual agent was programmed to do. We need to ensure fairness and maintain human oversight. This requires careful design, diverse training data, fairness constraints, and regular audits.
+                </aside>
+            </section>
+
+            <!-- Slide 17: Challenge 4 - Transparency -->
+            <section class="gradient-bg-2" data-transition="zoom">
+                <h2>🔍 Challenge #4: Transparency</h2>
+                <div style="margin-top: 40px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div class="agent-box" style="display: inline-block;">
+                            <h3>The Black Box Problem</h3>
+                            <div style="font-size: 5em; margin: 20px 0;">📦❓</div>
+                            <p style="font-size: 1.2em;">We know the input and output, but what happens inside?</p>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <h4>❌ Without Transparency:</h4>
+                            <div class="challenge-card">
+                                <ul>
+                                    <li>Can't debug errors</li>
+                                    <li>Can't verify correctness</li>
+                                    <li>Can't build trust</li>
+                                    <li>Can't meet regulations</li>
+                                    <li>Can't improve the system</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div>
+                            <h4>✅ With Transparency:</h4>
+                            <div class="agent-box" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                                <ul>
+                                    <li>Clear decision trails</li>
+                                    <li>Explainable reasoning</li>
+                                    <li>User confidence</li>
+                                    <li>Regulatory compliance</li>
+                                    <li>Continuous improvement</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <p style="font-size: 1.2em;"><strong>🎯 Goal:</strong> Make agent communication and decision-making visible and understandable!</p>
+                    </div>
+                </div>
+                <p class="reference">Reference: Adadi, A., & Berrada, M. (2018). Peeking inside the black box: A survey on explainable artificial intelligence. IEEE Access, 6, 52138-52160.</p>
+                <aside class="notes">
+                    Transparency is about making the system's inner workings visible and understandable. The "black box" problem is when we can see inputs and outputs but have no idea what's happening inside. This is a problem for debugging, verification, trust, and regulatory compliance. We need systems that can explain their reasoning and show their decision-making process. This is closely related to interpretability but focuses more on the system's ability to explain itself.
+                </aside>
+            </section>
+
+            <!-- Slide 18: Future Direction 1 - Explainable AI -->
+            <section class="gradient-bg-3" data-transition="slide">
+                <h2>🚀 Future Direction: Explainable AI (XAI)</h2>
+                <div style="margin-top: 40px;">
+                    <div class="future-card">
+                        <h3>🎯 Vision: Agents that can explain themselves!</h3>
+                        <p style="font-size: 1.2em;">Making MAS communication transparent and understandable</p>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
+                        <div class="agent-box">
+                            <h4>🧠 Interpretable Models</h4>
+                            <p>Using inherently explainable architectures</p>
+                            <p style="font-size: 2em;">🌳📊📈</p>
+                        </div>
+                        <div class="agent-box">
+                            <h4>💬 Natural Language Explanations</h4>
+                            <p>Agents explain their reasoning in plain English</p>
+                            <p style="font-size: 2em;">🤖💬👤</p>
+                        </div>
+                        <div class="agent-box">
+                            <h4>🎨 Visual Explanations</h4>
+                            <p>Showing decision processes graphically</p>
+                            <p style="font-size: 2em;">📊🗺️🎯</p>
+                        </div>
+                        <div class="agent-box">
+                            <h4>🔍 Counterfactual Reasoning</h4>
+                            <p>"If X had been different, I would have done Y"</p>
+                            <p style="font-size: 2em;">🤔💭✨</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <p><strong>Impact:</strong> Increased trust, better debugging, regulatory compliance, improved human-AI collaboration</p>
+                    </div>
+                </div>
+                <p class="reference">Reference: Gunning, D., et al. (2019). XAI—Explainable artificial intelligence. Science Robotics, 4(37), eaay7120.</p>
+                <aside class="notes">
+                    The future of MAS lies in explainability. We're working toward agents that can explain their reasoning in ways humans can understand - through natural language, visualizations, or counterfactual reasoning. This will increase trust, make debugging easier, help with regulatory compliance, and improve human-AI collaboration. It's a major research area with significant progress being made.
+                </aside>
+            </section>
+
+            <!-- Slide 19: Future Direction 2 - Standards & Collaboration -->
+            <section class="gradient-bg-4" data-transition="convex">
+                <h2>🌐 Future Directions: Standards & Collaboration</h2>
+                <div style="margin-top: 40px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="future-card">
+                            <h3>📜 Cross-System Standards</h3>
+                            <p><strong>Goal:</strong> Universal communication protocols</p>
+                            <ul style="font-size: 0.9em; margin-top: 15px;">
+                                <li>Interoperability between different MAS</li>
+                                <li>Standardized message formats</li>
+                                <li>Common ontologies</li>
+                                <li>Plug-and-play agents</li>
+                            </ul>
+                            <p style="font-size: 2em; margin-top: 15px;">🔌🤖🔌🤖</p>
+                        </div>
+                        <div class="future-card">
+                            <h3>🤝 Human-Machine Collaboration</h3>
+                            <p><strong>Goal:</strong> Seamless human-agent teams</p>
+                            <ul style="font-size: 0.9em; margin-top: 15px;">
+                                <li>Natural interaction interfaces</li>
+                                <li>Shared mental models</li>
+                                <li>Adaptive communication</li>
+                                <li>Trust calibration</li>
+                            </ul>
+                            <p style="font-size: 2em; margin-top: 15px;">👥🤖💪</p>
+                        </div>
+                    </div>
+                    <div class="future-card" style="margin-top: 20px;">
+                        <h3>⚖️ Ethical Governance</h3>
+                        <p><strong>Goal:</strong> Responsible AI development and deployment</p>
+                        <div style="display: flex; justify-content: space-around; margin-top: 15px;">
+                            <div>🛡️ Safety</div>
+                            <div>⚖️ Fairness</div>
+                            <div>🔒 Privacy</div>
+                            <div>📋 Accountability</div>
+                            <div>🌍 Sustainability</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <p style="font-size: 1.2em;"><strong>🎯 The Future is Collaborative, Standardized, and Ethical!</strong></p>
+                    </div>
+                </div>
+                <p class="reference">Reference: IEEE. (2019). Ethically Aligned Design: A Vision for Prioritizing Human Well-being with Autonomous and Intelligent Systems.</p>
+                <aside class="notes">
+                    Looking ahead, we need cross-system standards so different MAS can work together seamlessly. We need better human-machine collaboration so humans and agents can work as effective teams. And we need ethical governance to ensure AI is developed and deployed responsibly. These aren't just technical challenges - they require cooperation between researchers, industry, policymakers, and society.
+                </aside>
+            </section>
+
+            <!-- Slide 20: Conclusion -->
+            <section class="gradient-bg-5" data-transition="zoom">
+                <h2>🎯 Key Takeaways</h2>
+                <div style="margin-top: 40px;">
+                    <div class="agent-box" style="margin: 15px 0;">
+                        <h3>1️⃣ MAS is Everywhere</h3>
+                        <p>From factories to autonomous vehicles, multi-agent systems are transforming our world</p>
+                    </div>
+                    <div class="agent-box" style="margin: 15px 0;">
+                        <h3>2️⃣ Communication is Key</h3>
+                        <p>Effective agent communication enables coordination, collaboration, and collective intelligence</p>
+                    </div>
+                    <div class="agent-box" style="margin: 15px 0;">
+                        <h3>3️⃣ Challenges Remain</h3>
+                        <p>Interpretability, security, bias, and transparency need ongoing attention</p>
+                    </div>
+                    <div class="agent-box" style="margin: 15px 0;">
+                        <h3>4️⃣ Exciting Future Ahead</h3>
+                        <p>XAI, standards, human-AI collaboration, and ethical governance will shape the next generation</p>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 40px;">
+                    <p style="font-size: 1.5em;"><strong>🚀 The future of AI is social, collective, and collaborative! 🚀</strong></p>
+                    <div style="margin-top: 30px;">
+                        <span class="robot" style="font-size: 4em;">🤖</span>
+                        <span style="font-size: 3em;">❤️</span>
+                        <span class="robot" style="font-size: 4em; animation-delay: 0.5s;">🤖</span>
+                    </div>
+                </div>
+                <aside class="notes">
+                    Let's wrap up! MAS is everywhere and growing. Communication between agents is what makes these systems powerful. We face challenges around interpretability, security, bias, and transparency, but we're making progress. The future is exciting with explainable AI, better standards, improved human-AI collaboration, and ethical governance. The key message: the future of AI is not about isolated intelligent systems, but about social, collective, and collaborative intelligence!
+                </aside>
+            </section>
+
+            <!-- Slide 21: Discussion -->
+            <section class="gradient-bg-1 center-content" data-transition="slide">
+                <h2>💭 Let's Discuss!</h2>
+                <div style="margin-top: 50px;">
+                    <div class="agent-box" style="display: inline-block; max-width: 800px;">
+                        <h3>Discussion Topics:</h3>
+                        <ul style="text-align: left; font-size: 1.2em; line-height: 2;">
+                            <li>🤔 What MAS applications excite you most?</li>
+                            <li>⚠️ Which challenges concern you?</li>
+                            <li>🚀 What future directions should we prioritize?</li>
+                            <li>🏥 How can we apply MAS in healthcare?</li>
+                            <li>⚖️ What ethical guidelines do we need?</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="margin-top: 50px;">
+                    <p style="font-size: 1.5em;">Share your thoughts! 💬</p>
+                    <div style="margin-top: 30px;">
+                        <span class="robot" style="font-size: 4em;">🤖</span>
+                        <span style="font-size: 3em;">💭</span>
+                        <span style="font-size: 3em;">💡</span>
+                    </div>
+                </div>
+                <aside class="notes">
+                    Now it's time for discussion! I'd love to hear your thoughts on these topics. What applications excite you? What concerns do you have? What should we prioritize in future research? How can we apply these concepts in healthcare? What ethical guidelines do we need? Let's have a conversation!
+                </aside>
+            </section>
+
+            <!-- Slide 22: Questions -->
+            <section class="gradient-bg-2 center-content" data-transition="zoom">
+                <h2>❓ Questions? ❓</h2>
+                <div style="margin-top: 50px;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 30px;">
+                        <img src="https://images.unsplash.com/photo-1563207153-f403bf289096?w=200&h=200&fit=crop" 
+                             alt="Wondering robot" 
+                             class="small-robot wondering" 
+                             style="border-radius: 50%; border: 5px solid #FFD700;">
+                        <div style="font-size: 8em;" class="pulsing">❓</div>
+                        <img src="https://images.unsplash.com/photo-1535378917042-10a22c95931a?w=200&h=200&fit=crop" 
+                             alt="Curious robot" 
+                             class="small-robot wondering" 
+                             style="border-radius: 50%; border: 5px solid #FFD700; animation-delay: 0.5s;">
+                    </div>
+                </div>
+                <div style="margin-top: 50px;">
+                    <h3>I'm here to help! 🤖</h3>
+                    <p style="font-size: 1.3em; margin-top: 20px;">Ask me anything about Multi-Agent Systems!</p>
+                </div>
+                <div style="margin-top: 50px;">
+                    <div class="agent-box" style="display: inline-block;">
+                        <p style="font-size: 1.2em;">📧 Contact for more information</p>
+                        <p style="font-size: 1.2em;">🔗 Let's connect and collaborate!</p>
+                    </div>
+                </div>
+                <div style="margin-top: 40px;">
+                    <p style="font-size: 2em;">Thank you! 🙏✨</p>
+                    <div style="margin-top: 20px;">
+                        <span class="robot" style="font-size: 3em;">🤖</span>
+                        <span class="robot" style="font-size: 3em; animation-delay: 0.3s;">🤖</span>
+                        <span class="robot" style="font-size: 3em; animation-delay: 0.6s;">🤖</span>
+                    </div>
+                </div>
+                <aside class="notes">
+                    That's the end of our presentation! Thank you all for your attention. I hope you found this journey through Multi-Agent Systems communication informative and entertaining. I'm happy to answer any questions you might have. Let's keep the conversation going!
+                </aside>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Reveal.js JavaScript from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Initialize Reveal.js
+        Reveal.initialize({
+            hash: true,
+            transition: 'slide',
+            transitionSpeed: 'default',
+            backgroundTransition: 'fade',
+            controls: true,
+            progress: true,
+            center: true,
+            slideNumber: true,
+            keyboard: true,
+            overview: true,
+            touch: true,
+            loop: false,
+            rtl: false,
+            fragments: true,
+            embedded: false,
+            help: true,
+            showNotes: false,
+            autoPlayMedia: null,
+            preloadIframes: null,
+            mouseWheel: false,
+            hideInactiveCursor: true,
+            hideCursorTime: 5000,
+            width: 1200,
+            height: 700,
+            margin: 0.04,
+            minScale: 0.2,
+            maxScale: 2.0
+        });
+
+        // Treasure Hunt Quiz Game
+        const questions = [
+            {
+                question: "What does MAS stand for?",
+                options: ["Multi-Agent System", "Machine Agent Software", "Multiple AI Systems", "Managed Agent Service"],
+                correct: 0
+            },
+            {
+                question: "Which agent is responsible for user interaction?",
+                options: ["Task Agent", "Information Agent", "Interface Agent", "Quality Agent"],
+                correct: 2
+            },
+            {
+                question: "What is the main purpose of agent communication?",
+                options: ["To confuse humans", "To coordinate and collaborate", "To waste bandwidth", "To show off"],
+                correct: 1
+            },
+            {
+                question: "Which is NOT a challenge in MAS?",
+                options: ["Interpretability", "Security", "Transparency", "Making coffee"],
+                correct: 3
+            },
+            {
+                question: "What does XAI stand for?",
+                options: ["Extra AI", "Explainable AI", "Extreme AI", "X-ray AI"],
+                correct: 1
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        function startQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            askQuestion();
+        }
+
+        function askQuestion() {
+            if (currentQuestion < questions.length) {
+                const q = questions[currentQuestion];
+                let optionsText = q.options.map((opt, idx) => `${idx + 1}. ${opt}`).join('\n');
+                let answer = prompt(`Question ${currentQuestion + 1}/${questions.length}:\n\n${q.question}\n\n${optionsText}\n\nEnter your answer (1-4):`);
+                
+                if (answer === null) {
+                    alert("Quiz cancelled! Come back when you're ready to find the treasure! 🏴‍☠️");
+                    return;
+                }
+                
+                let answerNum = parseInt(answer) - 1;
+                
+                if (answerNum === q.correct) {
+                    score++;
+                    alert("🎉 Correct! You're one step closer to the treasure!");
+                } else {
+                    alert(`❌ Oops! The correct answer was: ${q.options[q.correct]}`);
+                }
+                
+                currentQuestion++;
+                askQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            const percentage = (score / questions.length) * 100;
+            const scoreDiv = document.getElementById('score');
+            const treasureDiv = document.getElementById('treasure');
+            
+            let message = '';
+            if (percentage === 100) {
+                message = `🏆 PERFECT SCORE! ${score}/${questions.length} 🏆\n\nYou found the treasure!`;
+                treasureDiv.style.display = 'block';
+            } else if (percentage >= 80) {
+                message = `🎉 Excellent! ${score}/${questions.length} 🎉\n\nYou're almost there!`;
+                treasureDiv.style.display = 'block';
+            } else if (percentage >= 60) {
+                message = `👍 Good job! ${score}/${questions.length} 👍\n\nKeep learning!`;
+            } else {
+                message = `📚 ${score}/${questions.length} - Keep studying! 📚\n\nYou'll get it next time!`;
+            }
+            
+            scoreDiv.innerHTML = message.replace(/\n/g, '<br>');
+            alert(message);
+        }
+
+        // Add some fun interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click sound effect (optional)
+            Reveal.on('slidechanged', function(event) {
+                console.log('Slide changed to:', event.indexh);
+            });
+        });
+    </script>
+</body>
+</html>
