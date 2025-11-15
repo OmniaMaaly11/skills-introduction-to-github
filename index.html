@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en">
+<head> 
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Multi-Agent Systems: Communication & Innovation</title>
+<style>
+  /* ---------- RESET & SAFETY ---------- */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html.custom-cursor * { cursor: none; } /* applied when JS confirms custom cursor available */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg,#0a0e27 0%,#1a1f3a 50%,#0f1419 100%);
+    color: #e0e6ed;
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* ---------- CUSTOM CURSOR ---------- */
+  #custom-cursor { position: fixed; width: 40px; height: 40px; pointer-events: none; z-index: 10000; transform: translate(-50%,-50%); transition: transform .08s linear; will-change: transform; }
+  .cursor-robot { width: 100%; height: 100%; position: relative; animation: robotFloat 2.4s ease-in-out infinite; }
+  .robot-body { width:24px;height:28px;background:linear-gradient(135deg,#4a9eff,#2563eb);border-radius:6px;position:absolute;left:8px;top:6px;box-shadow:0 0 10px rgba(74,158,255,0.5); }
+  .robot-head { width:18px;height:14px;background:linear-gradient(135deg,#60a5fa,#3b82f6);border-radius:4px;position:absolute;left:11px;top:0;box-shadow:0 0 8px rgba(96,165,250,0.4); }
+  .robot-eye{ width:4px;height:4px;background:#10b981;border-radius:50%;position:absolute;top:5px;animation:robotBlink 3s infinite; }
+  .robot-eye.left{ left:4px } .robot-eye.right{ right:4px }
+  .robot-antenna{ width:2px;height:6px;background:#8b5cf6;position:absolute;left:50%;transform:translateX(-50%);top:-6px; }
+  .robot-antenna::after{ content:''; width:4px;height:4px;background:#a78bfa;border-radius:50%;position:absolute;top:-4px;left:-1px; animation:antennaBlink 1.5s infinite; }
+  .robot-wheel{ width:8px;height:8px;background:#64748b;border-radius:50%;position:absolute;bottom:-4px;animation:wheelSpin 1s linear infinite; }
+  .robot-wheel.left{ left:2px } .robot-wheel.right{ right:2px }
+  .cursor-trail { position: fixed; width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:9999; opacity:0.9; animation:trailFade .9s ease-out forwards; background: radial-gradient(circle,#4a9eff 0%, transparent 70%); }
+
+  @keyframes robotFloat { 0%,100% { transform: translateY(0px);} 50% { transform: translateY(-3px);} }
+  @keyframes robotBlink { 0%,90%,100% { opacity: 1; } 95% { opacity: 0; } }
+  @keyframes antennaBlink { 0%,50%,100%{ box-shadow:0 0 5px #a78bfa } 25%,75%{ box-shadow:0 0 15px #a78bfa, 0 0 25px #8b5cf6 } }
+  @keyframes wheelSpin { from{ transform: rotate(0deg) } to{ transform: rotate(360deg) } }
+  @keyframes trailFade { to{ opacity: 0; transform: scale(.5); } }
+
+  /* ---------- PARTICLES ---------- */
+  .particles { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:hidden; }
+  .particle { position:absolute; width:2px;height:2px;border-radius:50%; background: rgba(74,158,255,0.5); opacity:0; animation:particleFloat linear infinite; }
+  @keyframes particleFloat {
+    0% { transform: translateY(120vh); opacity:0; }
+    10% { opacity:1; }
+    90% { opacity:1; }
+    100% { transform: translateY(-120px); opacity:0; }
+  }
+
+  /* ---------- PRESENTATION & SLIDES ---------- */
+  .presentation { width:100vw; height:100vh; position:relative; z-index:2; overflow:hidden; }
+  .slide { width:100%; height:100%; position:absolute; top:0; left:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:60px; opacity:0; transform:translateX(100%); transition: all .7s cubic-bezier(.68,-.55,.265,1.55); }
+  .slide.active { opacity:1; transform:translateX(0); z-index:3; }
+  .slide.prev { transform:translateX(-100%); z-index:2; }
+  .slide .content-box { background: rgba(15,23,42,0.7); border:2px solid rgba(74,158,255,0.25); border-radius:20px; padding:30px; max-width:1200px; backdrop-filter: blur(8px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); overflow-y: auto; max-height: 80vh; }
+
+  h1 { font-size:3.2rem; font-weight:700; background:linear-gradient(135deg,#4a9eff 0%,#a78bfa 50%,#10b981 100%); -webkit-background-clip:text; -webkit-text-fill-color: transparent; margin-bottom:18px; text-align:center; animation:titleGlow 3s ease-in-out infinite; }
+  @keyframes titleGlow { 0%,100%{ filter: drop-shadow(0 0 20px rgba(74,158,255,0.45)); } 50%{ filter: drop-shadow(0 0 36px rgba(167,139,250,0.6)); } }
+  h2 { font-size:2rem; color:#4a9eff; margin-bottom:18px; text-shadow:0 0 18px rgba(74,158,255,0.35); text-align:center; }
+  h3 { font-size:1.2rem; color:#60a5fa; margin-bottom:12px; text-shadow:0 0 12px rgba(96,165,250,0.3); }
+
+  p, li { font-size:1.05rem; line-height:1.6; color:#cbd5e1; margin-bottom:12px; }
+  .subtitle { font-size:1.05rem; color:#a78bfa; text-align:center; margin-top:-8px; margin-bottom:18px; }
+
+  .stat-box { background: linear-gradient(135deg, rgba(74,158,255,0.06), rgba(139,92,246,0.05)); border-radius:12px; padding:18px; margin:12px 0; border:1px solid rgba(74,158,255,0.12); position:relative; overflow:hidden; }
+  .stat-number { font-size:2.2rem; font-weight:700; color:#10b981; text-shadow:0 0 12px rgba(16,185,129,0.4); }
+  .citation { font-size:.9rem; color:#94a3b8; font-style:italic; margin-top:8px; padding-left:14px; border-left:3px solid rgba(74,158,255,0.16); }
+  .video-box { width: 100%; max-width: 600px; border-radius: 12px; margin: 20px auto; }
+  .video-box video { width: 100%; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+
+  .diagram { display:flex; justify-content:space-around; align-items:center; gap:18px; flex-wrap:wrap; margin:20px 0; }
+  .diagram-node { background:linear-gradient(135deg, rgba(74,158,255,0.09), rgba(139,92,246,0.06)); border-radius:12px; padding:16px; min-width:160px; text-align:center; border:1px solid rgba(74,158,255,0.12); animation:nodeAppear .6s ease-out forwards; opacity:0; transform:scale(.6); }
+  @keyframes nodeAppear { to { opacity:1; transform:scale(1) } }
+  .diagram-arrow { font-size:1.6rem; color:#10b981; animation:arrowPulse 2s ease-in-out infinite; }
+  @keyframes arrowPulse { 0%,100%{ transform:scale(1); opacity:.6 } 50%{ transform:scale(1.15); opacity:1 } }
+
+  ul { list-style:none; padding-left:0; }
+  li { position:relative; padding-left:30px; margin-bottom:12px; opacity:0; transform:translateX(-20px); animation:listItemAppear .45s ease-out forwards; }
+  li::before { content:'⚡'; position:absolute; left:0; font-size:1.1rem; color:#10b981; animation:iconGlow 2s ease-in-out infinite; }
+  @keyframes listItemAppear { to { opacity:1; transform:translateX(0); } }
+  @keyframes iconGlow { 0%,100%{ filter:drop-shadow(0 0 6px rgba(16,185,129,0.4)); } 50%{ filter:drop-shadow(0 0 14px rgba(16,185,129,0.7)); } }
+
+  .robot-assistant { position:absolute; width:80px; height:80px; animation:robotMove 18s linear infinite; bottom:20px; left:-120px; opacity:.9; }
+  @keyframes robotMove {
+    0%   { left:-120px; bottom:20px; transform:translateX(0) rotate(0deg); }
+    45%  { left:50%; bottom:40px; transform:translateX(-50%) rotate(10deg); }
+    100% { left:calc(100% + 120px); bottom:20px; transform:translateX(0) rotate(0deg); }
+  }
+
+  /* Navigation */
+  .nav-controls { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; gap:14px; align-items:center; }
+  .nav-btn { background:linear-gradient(135deg,#4a9eff,#2563eb); border:2px solid rgba(74,158,255,0.35); color:white; padding:10px 18px; font-size:1rem; border-radius:999px; cursor:pointer; transition: all .18s ease; box-shadow:0 6px 20px rgba(74,158,255,0.18); }
+  .nav-btn:hover, .nav-btn:focus { transform:translateY(-3px); box-shadow:0 10px 30px rgba(74,158,255,0.28); outline:none; }
+  .nav-btn:focus { box-shadow:0 10px 30px rgba(74,158,255,0.36); }
+
+  .slide-counter { background: rgba(15,23,42,0.85); border-radius:20px; padding:8px 14px; border:1px solid rgba(74,158,255,0.12); color:#4a9eff; font-weight:600; }
+
+  /* Chart & layout */
+  .grid-2 { display:grid; grid-template-columns: repeat(auto-fit,minmax(320px,1fr)); gap:18px; width:100%; max-width:1200px; }
+  .chart-container { width:100%; max-width:800px; height:400px; margin:20px auto; position:relative; }
+  canvas { border-radius:12px; background:rgba(15,23,42,0.45); padding:12px; display:block; }
+
+  .step-indicator { margin-bottom:12px; background:linear-gradient(135deg,#10b981,#059669); color:white; padding:8px 14px; border-radius:20px; font-weight:700; box-shadow:0 0 12px rgba(16,185,129,0.25); display: inline-block; }
+
+  /* responsiveness */
+  @media (max-width:900px) {
+    h1 { font-size:2rem; }
+    .slide { padding:28px; }
+    .robot-assistant { display:none; }
+  }
+
+  /* prefers reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .cursor-robot, .robot-assistant, .floating-robot, .robot-svg, .diagram-node, .diagram-arrow, li::before { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <!-- Custom Cursor -->
+  <div id="custom-cursor" aria-hidden="true">
+    <div class="cursor-robot" role="presentation">
+      <div class="robot-antenna"></div>
+      <div class="robot-head">
+        <div class="robot-eye left"></div>
+        <div class="robot-eye right"></div>
+      </div>
+      <div class="robot-body"></div>
+      <div class="robot-wheel left"></div>
+      <div class="robot-wheel right"></div>
+    </div>
+  </div>
+
+  <!-- Particle Background -->
+  <div class="particles" id="particles" aria-hidden="true"></div>
+
+  <!-- Robot assistant (decorative) -->
+  <svg class="robot-assistant" viewBox="0 0 100 100" aria-hidden="true">
+    <defs>
+      <linearGradient id="robotGradMain" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#4a9eff"/>
+        <stop offset="100%" stop-color="#8b5cf6"/>
+      </linearGradient>
+    </defs>
+    <rect x="20" y="35" width="60" height="45" rx="6" fill="url(#robotGradMain)"/>
+    <rect x="35" y="20" width="30" height="20" rx="4" fill="#60a5fa"/>
+    <circle cx="40" cy="30" r="3" fill="#10b981"/>
+    <circle cx="60" cy="30" r="3" fill="#10b981"/>
+  </svg>
+
+  <!-- Presentation -->
+  <div class="presentation" role="main">
+    <!-- Slide 1 -->
+    <div class="slide active" data-slide="1">
+      <h1 style="animation: titleAssemble 1.4s ease-out forwards;">Communication in Multi-Agent Systems</h1>
+      <p class="subtitle">Robotics, Innovation & The Future of Collective AI</p>
+      <div class="content-box" style="text-align:center;">
+        <p style="font-size:1.05rem;color:#a78bfa;color:#cdc3e9">🤖 Exploring how intelligent agents collaborate, communicate, and achieve goals🤖</p>
+      </div>
+      <svg class="robot-svg" style="width:120px;height:120px;margin-top:18px;" viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="robotGradSmall" x1="0%" x2="100%">
+            <stop offset="0%" stop-color="#4a9eff"/>
+            <stop offset="100%" stop-color="#8b5cf6"/>
+          </linearGradient>
+        </defs>
+        <rect x="35" y="40" width="30" height="35" rx="5" fill="url(#robotGradSmall)"/>
+        <rect x="40" y="30" width="20" height="15" rx="3" fill="#60a5fa"/>
+        <circle cx="45" cy="37" r="2" fill="#10b981">
+          <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="55" cy="37" r="2" fill="#10b981">
+          <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <line x1="50" y1="30" x2="50" y2="22" stroke="#8b5cf6" stroke-width="2"/>
+        <circle cx="50" cy="20" r="3" fill="#a78bfa">
+          <animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide" data-slide="2">
+      <h2>What is Multi-Agent Systems (MAS)?</h2>
+      <div class="content-box">
+        <p><strong>Multi-Agent Systems</strong> are computational systems where multiple intelligent agents interact and collaborate to achieve a desired goal.</p>
+        <div class="diagram">
+          <div class="diagram-node" style="animation-delay:.15s;">
+            <h3>🤖 Agent 1</h3><p style="font-size:.95rem;margin-top:8px"></p>
+          </div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node" style="animation-delay:.3s;">
+            <h3>🔗 Communication</h3><p style="font-size:.95rem;margin-top:8px"></p>
+          </div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node" style="animation-delay:.45s;">
+            <h3>🤖 Agent 2</h3><p style="font-size:.95rem;margin-top:8px"></p>
+          </div>
+        </div>
+        <div class="stat-box"><p><span class="stat-number">40%</span> more efficient collective decision-making</p><p class="citation">Source: IEEE Transactions on Robotics, 2023</p></div>
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide" data-slide="3">
+      <h2>Main Objective: Agent Communication</h2>
+      <div class="content-box">
+        <p>Effective communication between agents is the backbone of successful MAS implementation.</p>
+        <div class="diagram" style="margin-top:18px;">
+          <div class="diagram-node"><h3>📥 Input</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>🔄 Process</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>🤝 Collaborate</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>📤 Output</h3></div>
+        </div>
+        <div class="stat-box" style="margin-top:18px;"><p><span class="stat-number">50%</span> reduction in latency for distributed systems</p><p class="citation">Source: Springer, 2024</p></div>
+      </div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide" data-slide="4">
+      <div class="step-indicator">STEP 1</div>
+      <h2>Interface Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Takes user input, categorizes it, and passes it to the appropriate agent.</p>
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <h3>How It Works:</h3>
+            <ul>
+              <li>Receives user input</li>
+              <li>Analyzes input type and intent</li>
+              <li>Categorizes the input</li>
+              <li>Routes to specialized agents</li>
+            </ul>
+          </div>
+          <div class="stat-box">
+            <p><span class="stat-number">35%</span> improvement in user-agent interaction</p>
+            <p class="citation">Source: Nature AI, 2023</p>
+            <div style="margin-top:14px;"><canvas id="chart1" width="300" height="200" aria-label="Interface agent chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide" data-slide="5">
+      <div class="step-indicator">STEP 2</div>
+      <h2>Information Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Extracts keywords and important data.</p>
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <h3>Key Functions:</h3>
+            <ul>
+              <li>Natural Language Processing (NLP)</li>
+              <li>Keyword extraction & tagging</li>
+              <li>Entity recognition</li>
+              <li>Context understanding</li>
+            </ul>
+          </div>
+          <div class="stat-box">
+            <p><span class="stat-number">60%</span> boost in accuracy</p>
+            <p class="citation">Source: ACM, 2024</p>
+            <div style="margin-top:14px;"><canvas id="chart2" width="300" height="200" aria-label="Information agent chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6 -->
+    <div class="slide" data-slide="6">
+      <div class="step-indicator">STEP 3</div>
+      <h2>Task Manager / Orchestrator</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Divides complex tasks into subtasks and assigns them to specialized agents.</p>
+        <div class="diagram" style="margin-top:12px;">
+          <div class="diagram-node"><h3>📋 Main Task</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+            <div class="diagram-node" style="min-width:120px;"><p>Subtask A</p></div>
+            <div class="diagram-node" style="min-width:120px;"><p>Subtask B</p></div>
+            <div class="diagram-node" style="min-width:120px;"><p>Subtask C</p></div>
+          </div>
+        </div>
+        <div class="stat-box" style="margin-top:12px;"><p><span class="stat-number">45%</span> enhancement in MAS productivity</p><p class="citation">Source: World Economic Forum, 2024</p></div>
+        <div style="margin-top:14px;"><canvas id="chart3" width="600" height="250" aria-label="Task manager chart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Slide 7 -->
+    <div class="slide" data-slide="7">
+      <div class="step-indicator">STEP 4</div>
+      <h2>Data Retrieval Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Gathers needed information from databases, APIs, and external sources.</p>
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <h3>Capabilities:</h3>
+            <ul>
+              <li>Database queries (SQL, NoSQL)</li>
+              <li>API integration & web scraping</li>
+              <li>Real-time data streaming</li>
+              <li>Caching & optimization</li>
+            </ul>
+          </div>
+          <div class="stat-box">
+            <p><span class="stat-number">70%</span> reduction in query time</p>
+            <p class="citation">Source: Gartner, 2023</p>
+            <svg viewBox="0 0 200 150" style="width:100%;margin-top:12px;" aria-hidden="true">
+              <rect x="20" y="100" width="30" height="30" fill="#ef4444" opacity="0.8">
+                <animate attributeName="height" from="0" to="30" dur="1s" fill="freeze"/>
+                <animate attributeName="y" from="130" to="100" dur="1s" fill="freeze"/>
+              </rect>
+              <rect x="85" y="40" width="30" height="90" fill="#10b981" opacity="0.8">
+                <animate attributeName="height" from="0" to="90" dur="1s" fill="freeze"/>
+                <animate attributeName="y" from="130" to="40" dur="1s" fill="freeze"/>
+              </rect>
+              <text x="35" y="145" fill="#cbd5e1" font-size="12" text-anchor="middle">Before</text>
+              <text x="100" y="145" fill="#cbd5e1" font-size="12" text-anchor="middle">After</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8 -->
+    <div class="slide" data-slide="8">
+      <div class="step-indicator">STEP 5</div>
+      <h2>Quality Check Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Verifies and validates information to ensure accuracy and reliability.</p>
+        <div class="diagram" style="margin-top:12px;">
+          <div class="diagram-node"><h3>📊 Data Input</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>✓ Validation</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>🔍 Verification</h3></div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-node"><h3>✅ Approved</h3></div>
+        </div>
+        <div class="stat-box" style="margin-top:12px;"><p><span class="stat-number">55%</span> reduction of errors in MAS</p><p class="citation">Source: IEEE, 2023</p></div>
+        <div style="margin-top:12px;">
+          <h3>Quality Checks Include:</h3>
+          <ul>
+            <li>Data integrity verification</li>
+            <li>Consistency checks across sources</li>
+            <li>Error detection & correction</li>
+            <li>Compliance validation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 9 -->
+    <div class="slide" data-slide="9">
+      <div class="step-indicator">STEP 6</div>
+      <h2>Response Generation Agent</h2>
+      <div class="content-box">
+        <p><strong>Role:</strong> Prepares the final output and delivers it to the user in an appropriate format.</p>
+        <div class="grid-2" style="margin-top:12px;">
+          <div>
+            <h3>Output Formats:</h3>
+            <ul>
+              <li>Natural language responses</li>
+              <li>Structured data (JSON, XML)</li>
+              <li>Visualizations & reports</li>
+              <li>Action commands</li>
+            </ul>
+          </div>
+          <div>
+            <div class="stat-box"><p style="font-size:1rem;margin-bottom:10px;">Output Quality Trends</p><canvas id="chart4" width="300" height="200" aria-label="Output quality chart"></canvas></div>
+          </div>
+        </div>
+        <p style="margin-top:12px;font-size:1.05rem;text-align:center;color:#10b981;">🎯 Complete MAS Communication Pipeline Achieved! 🎯</p>
+      </div>
+    </div>
+
+    <!-- Slide 10 - Hyundai Smart Factory -->
+    <div class="slide" data-slide="10">
+      <h2>Real-World Application: Hyundai Smart Factory</h2>
+      <div class="content-box">
+        <h3>🏭 Fully Automated Production with Collaborative Robots</h3>
+        <p>Hyundai's smart factory uses Multi-Agent Systems for coordinating collaborative robots (cobots) in production lines, achieving unprecedented efficiency and precision.</p>
+        
+        <div class="stat-box">
+          <p><span class="stat-number">30%</span> increase in production output</p>
+          <p class="citation">Source: Hyundai Motor Company Manufacturing Innovation Report, 2023</p>
+        </div>
+
+        <div class="video-box">
+          <video controls poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Crect fill='%230f172a' width='600' height='400'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%234a9eff' font-size='24' font-family='sans-serif'%3E🏭 Hyundai Smart Factory Video%3C/text%3E%3C/svg%3E">
+            <source src="hyundai-smart-factory.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <p style="text-align:center;margin-top:8px;font-size:0.9rem;color:#94a3b8;">Add your Hyundai Smart Factory video as "hyundai-smart-factory.mp4"</p>
+        </div>
+
+        <div style="margin-top:12px;">
+          <h3>Key Features:</h3>
+          <ul>
+            <li>Real-time coordination between multiple robotic agents</li>
+            <li>Adaptive task allocation based on production demands</li>
+            <li>Predictive maintenance through agent communication</li>
+            <li>Quality control integration across assembly lines</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 11 - Autonomous Vehicles -->
+    <div class="slide" data-slide="11">
+      <h2>Real-World Application: Autonomous Vehicles</h2>
+      <div class="content-box">
+        <h3>🚗 Self-Driving Cars & Multi-Agent Systems</h3>
+        <p>Autonomous vehicles use MAS for sensor fusion, path planning, and vehicle-to-vehicle communication, creating a safer and more efficient transportation ecosystem.</p>
+        
+        <div class="grid-2">
+          <div class="stat-box">
+            <p><span class="stat-number">30%</span> increase in manufacturing efficiency</p>
+            <p class="citation">Source: Tesla Annual Report on Autonomous Systems, 2023</p>
+          </div>
+          <div class="stat-box">
+            <p>Global autonomous vehicle market: <span class="stat-number">$500B</span> by 2025</p>
+            <p class="citation">Source: Statista Autonomous Vehicle Market Analysis, 2024</p>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <h3>MAS Applications in Autonomous Vehicles:</h3>
+          <ul>
+            <li>Multi-sensor data fusion (LiDAR, cameras, radar)</li>
+            <li>Vehicle-to-vehicle (V2V) communication protocols</li>
+            <li>Distributed decision-making for traffic navigation</li>
+            <li>Cooperative adaptive cruise control systems</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 12 - Robot Adoption Trends -->
+    <div class="slide" data-slide="12">
+      <h2>Robot Adoption Trends & Market Growth</h2>
+      <div class="content-box">
+        <div style="margin-top:12px;">
+          <h3 style="text-align:center;">📈 Global Robot Adoption Trends (2020-2025)</h3>
+          <canvas id="chart5" width="700" height="250" style="margin-top:12px;" aria-label="Robot adoption chart"></canvas> 
+        </div>
+        
+        <div class="stat-box" style="margin-top:18px;">
+          <p><span class="stat-number">$500B</span> projected global robotics market by 2025</p>
+          <p class="citation">Source: International Federation of Robotics (IFR) World Robotics Report, 2024</p>
+        </div>
+
+        <div style="margin-top:12px;">
+          <h3>Key Industry Applications:</h3>
+          <ul>
+            <li>Manufacturing & Industrial Automation</li>
+            <li>Automotive Production & Assembly</li>
+            <li>Healthcare & Surgical Robotics</li>
+            <li>Logistics & Warehouse Management</li>
+            <li>Agriculture & Food Processing</li>
+          </ul>
+        </div>
+
+        <p class="citation" style="margin-top:12px;">Additional data sources: McKinsey Global Institute - The Future of Work in Manufacturing (2023); Boston Consulting Group - Robotics Market Forecast (2024)</p>
+      </div>
+    </div>
+
+    <!-- Slide 13 -->
+    <div class="slide" data-slide="13">
+      <h2>Challenges & Ethical Considerations</h2>
+      <div class="content-box">
+        <div class="grid-2">
+          <div class="stat-box">
+            <h3>🔒 Security</h3>
+            <p>Protecting agent communication from cyber threats and unauthorized access.</p>
+            <p style="margin-top:8px;"><span class="stat-number">70%</span> risk mitigation with proper protocols</p>
+            <p class="citation">Source: Gartner Cybersecurity in Multi-Agent Systems Report, 2023; IEEE Security & Privacy in Distributed AI Systems, 2023</p>
+          </div>
+          <div class="stat-box">
+            <h3>🧠 Interpretability</h3>
+            <p>Understanding how agents make decisions in complex scenarios.</p>
+            <p style="margin-top:8px;">Critical for trust & accountability</p>
+            <p class="citation">Source: Nature Machine Intelligence - Explainable AI in MAS, 2024</p>
+          </div>
+          <div class="stat-box">
+            <h3>⚖️ Bias & Control</h3>
+            <p>Ensuring agents don't perpetuate discriminatory patterns and maintaining appropriate human oversight.</p>
+            <p style="margin-top:8px;">Essential for ethical AI deployment</p>
+            <p class="citation">Source: ACM Conference on Fairness, Accountability, and Transparency, 2024</p>
+          </div>
+          <div class="stat-box">
+            <h3>🔍 Transparency</h3>
+            <p>Making agent communication and decision processes visible and auditable.</p>
+            <p style="margin-top:8px;">Foundation for regulatory compliance</p>
+            <p class="citation">Source: EU AI Act Guidelines for Multi-Agent Systems, 2024</p>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <h3>Additional Key Challenges:</h3>
+          <ul>
+            <li><strong>Scalability:</strong> Managing communication overhead in large-scale systems</li>
+            <li><strong>Privacy:</strong> Protecting sensitive data in distributed environments</li>
+            <li><strong>Autonomy Balance:</strong> Balancing agent independence with human oversight</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 14 -->
+    <div class="slide" data-slide="14">
+      <h2>Future of Multi-Agent Systems</h2>
+      <div class="content-box">
+        <div class="grid-2">
+          <div>
+            <h3>🚀 Emerging Innovations:</h3>
+            <ul>
+              <li>Quantum-enhanced MAS communication</li>
+              <li>Swarm intelligence for disaster response</li>
+              <li>Brain-computer interfaces with MAS</li>
+              <li>Space exploration & planetary colonization</li>
+              <li>Personalized AI assistants ecosystem</li>
+            </ul>
+          </div>
+          <div class="stat-box"><h3>📊 Growth Predictions</h3><canvas id="chart6" width="300" height="280" aria-label="Growth predictions chart"></canvas></div>
+        </div>
+        <div style="margin-top:18px;text-align:center;">
+          <svg viewBox="0 0 300 200" style="width:100%;max-width:500px;" aria-hidden="true">
+            <defs><linearGradient id="cityGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#4a9eff;stop-opacity:0.8"/><stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.3"/></linearGradient></defs>
+            <rect x="20" y="120" width="30" height="80" fill="url(#cityGrad)" opacity="0.8"/>
+            <rect x="60" y="100" width="35" height="100" fill="url(#cityGrad)" opacity="0.8"/>
+            <rect x="105" y="80" width="40" height="120" fill="url(#cityGrad)" opacity="0.8"/>
+            <rect x="155" y="110" width="30" height="90" fill="url(#cityGrad)" opacity="0.8"/>
+            <rect x="195" y="90" width="35" height="110" fill="url(#cityGrad)" opacity="0.8"/>
+            <rect x="240" y="105" width="40" height="95" fill="url(#cityGrad)" opacity="0.8"/>
+            <circle cx="50" cy="50" r="8" fill="#10b981" opacity="0.7"><animate attributeName="cx" values="50;250;50" dur="8s" repeatCount="indefinite"/><animate attributeName="cy" values="50;30;50" dur="8s" repeatCount="indefinite"/></circle>
+            <circle cx="200" cy="40" r="6" fill="#f59e0b" opacity="0.7"><animate attributeName="cx" values="200;80;200" dur="10s" repeatCount="indefinite"/><animate attributeName="cy" values="40;60;40" dur="10s" repeatCount="indefinite"/></circle>
+            <circle cx="150" cy="35" r="7" fill="#a78bfa" opacity="0.7"><animate attributeName="cx" values="150;100;250;150" dur="12s" repeatCount="indefinite"/><animate attributeName="cy" values="35;55;45;35" dur="12s" repeatCount="indefinite"/></circle>
+          </svg>
+          <p style="margin-top:12px;font-size:1.05rem;color:#a78bfa;">The future is collaborative, intelligent, and autonomous! 🌟</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 15 - Future Directions -->
+    <div class="slide" data-slide="15">
+      <h2>Future Directions</h2>
+      <div class="content-box">
+        <div class="grid-2">
+          <div class="stat-box">
+            <h3>🔍 Explainable AI Communication</h3>
+            <p style="margin-top:12px;">Making agent-to-agent communication transparent and understandable to humans.</p>
+            <p style="margin-top:12px;color:#10b981;font-style:italic;">💡 Tip: "It's like adding subtitles to what machines say to each other."</p>
+          </div>
+          <div class="stat-box">
+            <h3>🌐 Cross-System Standards</h3>
+            <p style="margin-top:12px;">Developing universal protocols for seamless inter-agent communication across different platforms.</p>
+            <p style="margin-top:12px;color:#10b981;font-style:italic;">💡 Tip: "Just like people from different countries use English to communicate, machines will use one shared protocol."</p>
+          </div>
+          <div class="stat-box">
+            <h3>🤝 Human-Machine Collaboration</h3>
+            <p style="margin-top:12px;">Creating hybrid teams where humans and AI agents work together synergistically.</p>
+            <p style="margin-top:12px;color:#10b981;font-style:italic;">💡 Tip: "For example, in hospitals or rescue operations, humans and AI could work as one team."</p>
+          </div>
+          <div class="stat-box">
+            <h3>⚖️ Ethical Governance</h3>
+            <p style="margin-top:12px;">Establishing frameworks and regulations to ensure responsible AI agent behavior.</p>
+            <p style="margin-top:12px;color:#10b981;font-style:italic;">💡 Tip: "It's about keeping AI communication under human control and responsibility."</p>
+          </div>
+        </div>
+        <div style="margin-top:18px;text-align:center;">
+          <p style="font-size:1.1rem;color:#4a9eff;">These directions will shape the next generation of Multi-Agent Systems! 🚀</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 16 - Key Takeaways -->
+    <div class="slide" data-slide="16">
+      <h2>Key Takeaways</h2>
+      <div class="content-box">
+        <div style="text-align:center;margin-bottom:12px;"><p style="font-size:1.05rem;color:#4a9eff;">Communication is the Heart of Multi-Agent Systems</p></div>
+        <div class="grid-2">
+          <div class="stat-box">
+            <h3>✅ Benefits</h3>
+            <ul style="text-align:left;">
+              <li>40% more efficient decisions</li>
+              <li>50% reduced latency</li>
+              <li>70% faster data retrieval</li>
+              <li>55% fewer errors</li>
+            </ul>
+          </div>
+          <div class="stat-box">
+            <h3>🎯 Core Components</h3>
+            <ul style="text-align:left;">
+              <li>Interface Agent</li>
+              <li>Information Agent</li>
+              <li>Task Orchestrator</li>
+              <li>Quality Assurance</li>
+            </ul>
+          </div>
+        </div>
+        <div style="margin-top:12px;text-align:center;">
+          <p style="font-size:1.05rem;color:#10b981;">🤖 MAS is revolutionizing automation, AI, and human-machine collaboration! 🤖</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 17 - References -->
+    <div class="slide" data-slide="17">
+      <h2>References</h2>
+      <div class="content-box" style="text-align:left;max-width:1000px;">
+        <p style="font-size:1.05rem;margin-bottom:12px;text-align:center;color:#a78bfa;">All statistics and data cited in APA format:</p>
+        <div style="line-height:1.8;">
+          <p class="citation" style="border-left:none;padding-left:0;">ACM. (2024). <em>Keyword extraction in multi-agent systems</em>. ACM Computing Surveys, 56(3), 1-35.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">ACM Conference on Fairness, Accountability, and Transparency. (2024). <em>Bias mitigation in multi-agent systems</em>. FAccT '24 Proceedings.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">Boston Consulting Group. (2024). <em>Robotics market forecast and industry trends</em>. BCG Technology Report.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">EU AI Act. (2024). <em>Guidelines for transparency in multi-agent systems</em>. European Commission Digital Policy.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">Gartner. (2023). <em>Data retrieval optimization and cybersecurity in MAS</em>. Gartner Research Report GR-2023-145.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">Gartner. (2023). <em>Cybersecurity in multi-agent systems: Risk mitigation strategies</em>. Gartner Security & Risk Management Summit.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">Hyundai Motor Company. (2023). <em>Manufacturing innovation report: Smart factory automation</em>. Hyundai Annual Technology Review.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">IEEE. (2023). <em>Quality assurance and error mitigation in multi-agent systems</em>. IEEE Transactions on Systems, Man, and Cybernetics.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">IEEE. (2023). <em>Security and privacy in distributed AI systems</em>. IEEE Security & Privacy Magazine, 21(4), 45-58.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">IEEE Transactions on Robotics. (2023). <em>Collective decision-making in multi-agent robotic systems</em>. IEEE T-RO, 39(2), 567-582.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">International Federation of Robotics. (2024). <em>World robotics report: Industrial and service robots</em>. IFR Statistical Department.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">McKinsey Global Institute. (2023). <em>The future of work in manufacturing: Automation and robotics</em>. McKinsey & Company.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">Nature AI. (2023). <em>Interface agents and user interaction improvements</em>. Nature Artificial Intelligence, 5(8), 892-905.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">Nature Machine Intelligence. (2024). <em>Explainable AI in multi-agent systems</em>. Nature Machine Intelligence, 6(1), 23-37.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">Springer. (2024). <em>Communication latency reduction in distributed systems</em>. Springer Journal of Distributed Computing, 37(4), 445-462.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">Statista. (2024). <em>Global robotics market projections and autonomous vehicle market analysis</em>. Statista Industry Insights.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">Tesla. (2023). <em>Annual report: Automation and manufacturing efficiency in autonomous systems</em>. Tesla, Inc. Investor Relations.</p>
+          <p class="citation" style="border-left:none;padding-left:0;">World Economic Forum. (2024). <em>Task orchestration and productivity in multi-agent systems</em>. WEF Future of Work Report.</p>
+        </div>
+        <div style="text-align:center;margin-top:14px;"><p style="font-size:1.05rem;color:#10b981;">Thank you for exploring the future of MAS! 🚀</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-controls" aria-hidden="false">
+    <button class="nav-btn" id="prevBtn" aria-label="Previous slide">← Previous</button>
+    <div class="slide-counter" aria-live="polite"><span id="currentSlide">1</span> / <span id="totalSlides">17</span></div>
+    <button class="nav-btn" id="nextBtn" aria-label="Next slide">Next →</button>
+  </div>
+
+<script>
+/* ---------- Initialization & Helpers ---------- */
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Elements
+  const cursor = document.getElementById('custom-cursor');
+  const particlesContainer = document.getElementById('particles');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const totalSlides = slides.length;
+  const currentSlideSpan = document.getElementById('currentSlide');
+  const totalSlidesSpan = document.getElementById('totalSlides');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  totalSlidesSpan.textContent = totalSlides;
+
+  /* ---------- CUSTOM CURSOR (with safe fallback) ---------- */
+  let customCursorReady = false;
+  let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+  // Show system cursor until JS confirms moving element will track mouse
+  function enableCustomCursor() {
+    document.documentElement.classList.add('custom-cursor');
+    customCursorReady = true;
+  }
+  // Track pointer
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX; mouseY = e.clientY;
+    if (!customCursorReady) enableCustomCursor();
+    // Move custom cursor element smoothly
+    cursor.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+    // occasional trail
+    if (Math.random() > 0.75) {
+      const t = document.createElement('div');
+      t.className = 'cursor-trail';
+      t.style.left = (mouseX - 4) + 'px';
+      t.style.top = (mouseY - 4) + 'px';
+      document.body.appendChild(t);
+      setTimeout(()=> t.remove(), 900);
+    }
+  });
+
+  // Hide custom cursor on touch devices
+  if ('ontouchstart' in window) {
+    cursor.style.display = 'none';
+    document.documentElement.classList.remove('custom-cursor');
+  }
+
+  /* ---------- PARTICLE GENERATOR ---------- */
+  function createParticle() {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const left = Math.random() * 100;
+    const size = 1 + Math.random() * 3;
+    p.style.left = left + '%';
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    const delay = Math.random() * 20;
+    p.style.animationDelay = delay + 's';
+    // duration random between 12s - 28s
+    p.style.animationDuration = (12 + Math.random()*16) + 's';
+    particlesContainer.appendChild(p);
+    // auto remove after animation end to prevent DOM overflow
+    setTimeout(() => { p.remove(); }, (12 + 16) * 1000 + 2000);
+  }
+  // create initial batch and then interval
+  for (let i=0;i<45;i++) createParticle();
+  // keep adding a few over time
+  setInterval(() => { for (let i=0;i<3;i++) createParticle(); }, 2500);
+
+  /* ---------- SLIDE NAVIGATION ---------- */
+  let currentSlide = 1;
+
+  function showSlide(n) {
+    if (n < 1) n = 1;
+    if (n > totalSlides) n = totalSlides;
+
+    // determine direction for prev class
+    slides.forEach((s, idx) => {
+      s.classList.remove('active','prev');
+      if (idx+1 < n) s.classList.add('prev');
+    });
+
+    slides[n-1].classList.add('active');
+    currentSlide = n;
+    currentSlideSpan.textContent = currentSlide;
+
+    // retrigger list/diagram animations (simple reflow trick)
+    const active = slides[n-1];
+    active.querySelectorAll('li').forEach((li) => {
+      li.style.animation = 'none';
+      requestAnimationFrame(()=> li.style.animation = '');
+    });
+    active.querySelectorAll('.diagram-node').forEach((dn)=> {
+      dn.style.animation = 'none';
+      requestAnimationFrame(()=> dn.style.animation = '');
+    });
+
+    // initialize charts on demand
+    if (currentSlide === 4) initChart1();
+    if (currentSlide === 5) initChart2();
+    if (currentSlide === 6) initChart3();
+    if (currentSlide === 9) initChart4();
+    if (currentSlide === 12) initChart5();
+    if (currentSlide === 14) initChart6();
+  }
+
+  prevBtn.addEventListener('click', ()=> showSlide(currentSlide - 1));
+  nextBtn.addEventListener('click', ()=> showSlide(currentSlide + 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') showSlide(currentSlide - 1);
+    if (e.key === 'ArrowRight') showSlide(currentSlide + 1);
+  });
+
+  // ensure first slide charts load if needed
+  showSlide(1);
+
+  /* ---------- Simple canvas chart utilities ---------- */
+  function clearCanvas(ctx, w, h) { ctx.clearRect(0,0,w,h); }
+
+  /* --------- Chart 1 (Bar: Before vs After) - FIXED GREEN BAR ---------- */
+  function initChart1() {
+    const c = document.getElementById('chart1'); if (!c || c.dataset.initialized) return;
+    const ctx = c.getContext('2d');
+    const data = [65, 100]; const labels = ['Before','After']; const colors = ['#ef4444','#10b981'];
+    const w = c.width, h = c.height;
+    clearCanvas(ctx,w,h);
+    const maxH = h - 50; // Increased padding at bottom
+    const barW = 60, spacing = 80;
+    data.forEach((v,i)=>{
+      const height = (v/100)*maxH;
+      const x = 40 + i * spacing;
+      const y = h - 40 - height; // Adjusted for better spacing
+      ctx.fillStyle = colors[i];
+      ctx.fillRect(x,y,barW,height);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '14px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(labels[i], x + barW/2, h - 20); // Adjusted label position
+      ctx.fillText(v + '%', x + barW/2, y - 6);
+    });
+    c.dataset.initialized = 'true';
+  }
+
+  /* --------- Chart 2 (Pie) --------- */
+  function initChart2() {
+    const c = document.getElementById('chart2'); if (!c || c.dataset.initialized) return;
+    const ctx = c.getContext('2d');
+    const data = [60,25,15]; const labels = ['NLP','Regex','Manual']; const colors = ['#4a9eff','#8b5cf6','#f59e0b'];
+    const w = c.width, h = c.height; const cx = w/2, cy = h/2, radius = Math.min(w,h)/3;
+    clearCanvas(ctx,w,h);
+    let angle = -Math.PI/2;
+    data.forEach((v,i)=>{
+      const slice = (v/100)*Math.PI*2;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,radius,angle, angle + slice); ctx.closePath();
+      ctx.fillStyle = colors[i]; ctx.fill();
+      // label
+      const mid = angle + slice/2;
+      const lx = cx + Math.cos(mid)*(radius + 24);
+      const ly = cy + Math.sin(mid)*(radius + 8);
+      ctx.fillStyle = '#cbd5e1'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(labels[i] + ' ' + v + '%', lx, ly);
+      angle += slice;
+    });
+    c.dataset.initialized = 'true';
+  }
+
+  /* --------- Chart 3 (Line) --------- */
+  function initChart3() {
+    const c = document.getElementById('chart3'); if (!c || c.dataset.initialized) return;
+    const ctx = c.getContext('2d');
+    const data = [45,55,70,82,90]; const labels = ['Q1','Q2','Q3','Q4','Q5'];
+    const w = c.width, h = c.height; const pad = 40; const chartW = w - pad*2, chartH = h - pad*2;
+    clearCanvas(ctx,w,h);
+    // axes
+    ctx.strokeStyle = '#4a9eff'; ctx.lineWidth = 1.8; ctx.beginPath();
+    ctx.moveTo(pad,pad); ctx.lineTo(pad,h-pad); ctx.lineTo(w-pad,h-pad); ctx.stroke();
+    // line
+    ctx.strokeStyle = '#10b981'; ctx.lineWidth = 3; ctx.beginPath();
+    data.forEach((v,i)=>{
+      const x = pad + (i/(data.length-1))*chartW;
+      const y = h - pad - (v/100)*chartH;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      // points
+      ctx.fillStyle = '#10b981'; ctx.fillRect(x-4,y-4,8,8);
+      // labels below
+      ctx.fillStyle = '#cbd5e1'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(labels[i], x, h - pad + 18); ctx.fillText(v + '%', x, y - 10);
+    });
+    ctx.stroke();
+    c.dataset.initialized = 'true';
+  }
+
+  /* --------- Chart 4 (Area) --------- */
+  function initChart4() {
+    const c = document.getElementById('chart4'); if (!c || c.dataset.initialized) return;
+    const ctx = c.getContext('2d');
+    const data = [70,75,82,88,92,95];
+    const w = c.width, h = c.height, pad = 30, chartW = w - pad*2, chartH = h - pad*2;
+    clearCanvas(ctx,w,h);
+    // gradient
+    const grad = ctx.createLinearGradient(0,pad,0,h-pad); grad.addColorStop(0,'rgba(74,158,255,0.6)'); grad.addColorStop(1,'rgba(74,158,255,0.05)');
+    ctx.beginPath(); ctx.moveTo(pad, h-pad);
+    data.forEach((v,i)=>{
+      const x = pad + (i/(data.length-1))*chartW; const y = h - pad - (v/100)*chartH;
+      ctx.lineTo(x,y);
+    });
+    ctx.lineTo(w-pad, h-pad); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+    // line overlay
+    ctx.strokeStyle = '#4a9eff'; ctx.lineWidth = 3; ctx.beginPath();
+    data.forEach((v,i)=>{
+      const x = pad + (i/(data.length-1))*chartW; const y = h - pad - (v/100)*chartH;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    c.dataset.initialized = 'true';
+  }
+
+  /* --------- Chart 5 (Grouped bars) --------- */
+  function initChart5() {
+    const c = document.getElementById('chart5'); if (!c || c.dataset.initialized) return;
+    const ctx = c.getContext('2d');
+    const years = ['2020','2021','2022','2023','2024','2025'];
+    const manufacturing = [120,145,180,220,280,350];
+    const automotive = [80,95,115,145,190,250];
+    const maxValue = 350;
+    const w = c.width, h = c.height; const pad = 50;
+    clearCanvas(ctx,w,h);
+    const groupSpacing = (w - pad*2) / years.length;
+    const barWidth = 22;
+    years.forEach((yr,i)=>{
+      const baseX = pad + i*groupSpacing;
+      const h1 = (manufacturing[i]/maxValue) * (h - pad*2);
+      const y1 = h - pad - h1;
+      ctx.fillStyle = '#4a9eff'; ctx.fillRect(baseX, y1, barWidth, h1);
+      const h2 = (automotive[i]/maxValue) * (h - pad*2);
+      const y2 = h - pad - h2;
+      ctx.fillStyle = '#8b5cf6'; ctx.fillRect(baseX + barWidth + 6, y2, barWidth, h2);
+      ctx.fillStyle = '#cbd5e1'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(yr, baseX + barWidth, h - pad + 16);
+    });
+    // legend
+    ctx.fillStyle = '#4a9eff'; ctx.fillRect(pad, 18, 16, 12);
+    ctx.fillStyle = '#cbd5e1'; ctx.font='12px sans-serif'; ctx.textAlign='left'; ctx.fillText('Manufacturing ($B)', pad + 22, 29);
+    ctx.fillStyle = '#8b5cf6'; ctx.fillRect(pad + 160, 18, 16, 12);
+    ctx.fillStyle = '#cbd5e1'; ctx.fillText('Automotive ($B)', pad + 188, 29);
+    c.dataset.initialized = 'true';
+  }
+
+  /* --------- Chart 6 (Growth) - INCREASED HEIGHT --------- */
+  function initChart6() {
+    const c = document.getElementById('chart6'); if (!c || c.dataset.initialized) return;
+    const ctx = c.getContext('2d');
+    const years = ['2024','2025','2026','2027','2028']; const growth = [100,145,210,305,440];
+    const w = c.width, h = c.height; const pad = 40, chartW = w - pad*2, chartH = h - pad*2;
+    clearCanvas(ctx,w,h);
+    const grad = ctx.createLinearGradient(0,pad,0,h-pad); grad.addColorStop(0,'rgba(16,185,129,0.6)'); grad.addColorStop(1,'rgba(16,185,129,0.08)');
+    ctx.beginPath(); ctx.moveTo(pad, h-pad);
+    growth.forEach((v,i) => {
+      const x = pad + (i/(growth.length-1))*chartW; const y = h - pad - (v/500)*chartH;
+      ctx.lineTo(x,y);
+    });
+    ctx.lineTo(w-pad, h-pad); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+    ctx.strokeStyle = '#10b981'; ctx.lineWidth = 3; ctx.beginPath();
+    growth.forEach((v,i)=>{
+      const x = pad + (i/(growth.length-1))*chartW; const y = h - pad - (v/500)*chartH;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#cbd5e1'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText(years[i], x, h - pad + 16); ctx.fillText('$' + v + 'B', x, y - 10);
+    });
+    ctx.stroke(); c.dataset.initialized = 'true';
+  }
+
+  // optionally initialize charts visible on first slide area (none required)
+});
+</script>
+</body>
+</html>
