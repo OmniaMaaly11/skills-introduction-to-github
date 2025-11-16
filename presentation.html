@@ -121,7 +121,7 @@
   }
 
   /* ---------- Navigation ---------- */
-  .nav-controls { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; gap:14px; align-items:center; }
+  .nav-controls { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; gap:14px; align-items:center; flex-wrap:wrap; justify-content:center; }
   .nav-btn { background:linear-gradient(135deg,#4a9eff,#2563eb); border:2px solid rgba(74,158,255,0.35); color:white; padding:10px 18px; font-size:1rem; border-radius:999px; cursor:pointer; transition: all .18s ease; box-shadow:0 6px 20px rgba(74,158,255,0.18); }
   .nav-btn:hover, .nav-btn:focus { transform:translateY(-3px); box-shadow:0 10px 30px rgba(74,158,255,0.28); outline:none; }
 
@@ -662,6 +662,7 @@
     <button class="nav-btn" id="prevBtn" aria-label="Previous slide">← Previous</button>
     <div class="slide-counter" aria-live="polite"><span id="currentSlide">1</span> / <span id="totalSlides">12</span></div>
     <button class="nav-btn" id="nextBtn" aria-label="Next slide">Next →</button>
+    <input type="range" id="slideSlider" min="1" max="12" value="1" step="1" aria-label="Slide navigation slider">
   </div>
 
 <script>
@@ -674,6 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const totalSlidesSpan = document.getElementById('totalSlides');
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
+  const slideSlider = document.getElementById('slideSlider');
 
   totalSlidesSpan.textContent = totalSlides;
 
@@ -741,6 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
     slides[n - 1].classList.add('active');
     currentSlide = n;
     currentSlideSpan.textContent = currentSlide;
+    slideSlider.value = currentSlide;
 
     const active = slides[n - 1];
     active.querySelectorAll('li').forEach((li) => {
@@ -759,6 +762,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') showSlide(currentSlide - 1);
     if (e.key === 'ArrowRight') showSlide(currentSlide + 1);
+  });
+
+  slideSlider.addEventListener('input', (e) => {
+    showSlide(parseInt(e.target.value));
   });
 
   showSlide(1);
